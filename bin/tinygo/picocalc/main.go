@@ -5,6 +5,7 @@
 package main
 
 import (
+	"device/arm"
 	"errors"
 	"machine"
 	"mattwach/rpngo/bin/tinygo"
@@ -81,6 +82,9 @@ func (ic *interruptCheck) delaySleepFn(r *rpn.RPN, t float64) error {
 }
 
 func main() {
+	// Enable interrupts. When using UF2 Loader (bootloader) interrupts are disabled when main is called
+	arm.EnableInterrupts(0)
+
 	time.Sleep(200 * time.Millisecond)
 	// This only seeems to work for panics I throw and not errors
 	// like array out of bounds.
