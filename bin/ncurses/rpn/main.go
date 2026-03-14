@@ -10,6 +10,7 @@ import (
 	"mattwach/rpngo/drivers/posix/serial"
 	"mattwach/rpngo/fileops"
 	"mattwach/rpngo/functions"
+	"mattwach/rpngo/parse"
 	"mattwach/rpngo/rpn"
 	"mattwach/rpngo/startup"
 	"mattwach/rpngo/window"
@@ -19,6 +20,7 @@ import (
 	"mattwach/rpngo/xmodem"
 	"os"
 	"os/signal"
+	"path/filepath"
 )
 
 const scrollbytes = 256 * 1024
@@ -49,15 +51,59 @@ func run() error {
 }
 
 func cli(r *rpn.RPN) error {
+	tryLoadState(r)
+	defer trySaveState(r)
 	if err := r.ExecSlice(os.Args[1:]); err != nil {
 		return err
 	}
-
-	for _, f := range r.Frames {
-		fmt.Println(f.String(true))
+	if len(r.Frames) > 0 {
+		fmt.Println(r.Frames[len(r.Frames)-1].String(true))
 	}
-
 	return nil
+}
+
+const stateName = ".rpn_cli_state"
+
+func genStatePath() string {
+	home, err := fileops.HomeDir()
+	if err != nil {
+		log.Printf("Can not generate state path: %v", err)
+		return ""
+	}
+	return filepath.Join(home, stateName)
+}
+
+func tryLoadState(r *rpn.RPN) {
+	path := genStatePath()
+	if len(path) == 0 {
+		return
+	}
+	buff, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("Failed to load %s: %v", path, err)
+		return
+	}
+	err = parse.Fields(string(buff), r.Exec)
+	if err != nil {
+		log.Printf("Failed to parse %s: %v", path, err)
+	} else {
+		log.Printf("Read state snapshot %s", path)
+	}
+}
+
+func trySaveState(r *rpn.RPN) {
+	path := genStatePath()
+	if len(path) == 0 {
+		return
+	}
+	buff := r.VarSnapshot(make([]byte, 0, 256))
+	buff = r.StackSnapshot(buff)
+	err := os.WriteFile(path, buff, 0644)
+	if err != nil {
+		log.Printf("Failed to write %s: %v", path, err)
+	} else {
+		log.Printf("Wrote state snapshot to %s", path)
+	}
 }
 
 func interactive(r *rpn.RPN) error {

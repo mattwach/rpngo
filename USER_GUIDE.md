@@ -49,6 +49,17 @@ go build
 ./rpn
 ```
 
+The `ncurses` build also supports quick calculations on the commandline.
+This is similar to the minimal version but the stack and variables are saved
+between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
+commands
+
+```
+./rpn 2 3 +
+  5
+./rpn 4 +
+  9
+```
 
 ### Microcontrollers using TinyGo (Raspberry Pi Pico and Pico2 tested as working)
 
