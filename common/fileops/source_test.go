@@ -2,7 +2,7 @@ package fileops
 
 import (
 	"errors"
-	"mattwach/rpngo/drivers/posix/fs"
+	"mattwach/rpngo/common/drivers/posix/fs"
 	"mattwach/rpngo/common/functions"
 	"mattwach/rpngo/common/rpn"
 	"os"
