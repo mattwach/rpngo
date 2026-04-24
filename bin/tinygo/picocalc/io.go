@@ -4,10 +4,10 @@ import (
 	"mattwach/rpngo/drivers/tinygo/picocalc/i2ckbd"
 	"mattwach/rpngo/drivers/tinygo/picocalc/ili948x"
 	"mattwach/rpngo/drivers/tinygo/serial"
-	"mattwach/rpngo/elog"
-	"mattwach/rpngo/key"
-	"mattwach/rpngo/rpn"
-	"mattwach/rpngo/xmodem"
+	"mattwach/rpngo/common/elog"
+	"mattwach/rpngo/common/key"
+	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/xmodem"
 	"time"
 )
 

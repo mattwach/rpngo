@@ -6,7 +6,7 @@ import (
 	"machine"
 	"mattwach/rpngo/drivers/tinygo/fonts"
 	"mattwach/rpngo/drivers/tinygo/picocalc/ili948x"
-	"mattwach/rpngo/elog"
+	"mattwach/rpngo/common/elog"
 	"time"
 )
 

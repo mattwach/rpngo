@@ -7,7 +7,7 @@ package ili948x
 import (
 	"image/color"
 	"mattwach/rpngo/drivers/tinygo/fonts"
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/window"
 )
 
 const textPad = 3

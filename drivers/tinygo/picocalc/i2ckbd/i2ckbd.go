@@ -5,7 +5,7 @@ package i2ckbd
 import (
 	"fmt"
 	"machine"
-	"mattwach/rpngo/key"
+	"mattwach/rpngo/common/key"
 )
 
 // IMPORTANT:

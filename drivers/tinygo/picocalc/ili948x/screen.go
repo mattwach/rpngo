@@ -1,7 +1,7 @@
 package ili948x
 
 import (
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/window"
 )
 
 const FontCharWidth = 8
