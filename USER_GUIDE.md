@@ -26,9 +26,9 @@ There is a `bin/` directory that contains various different configurations of
 Minimal version:
 
 ```
-cd bin/minimal/rpn
+cd bin/minimal/mrpn
 go build
-./rpn 2 3 +
+./mrpn 2 3 +
 ```
 
 ncurses version 
@@ -44,9 +44,9 @@ sudo apt install libncurses-dev
 then
 
 ```
-cd bin/ncurses/rpn
+cd bin/ncurses/nrpn
 go build
-./rpn
+./nrpn
 ```
 
 The `ncurses` build also supports quick calculations on the commandline.
@@ -55,9 +55,9 @@ between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
 commands
 
 ```
-./rpn 2 3 +
+./nrpn 2 3 +
   5
-./rpn 4 +
+./nrpn 4 +
   9
 ```
 
