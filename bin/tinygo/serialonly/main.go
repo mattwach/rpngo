@@ -7,9 +7,9 @@ package main
 import (
 	"machine"
 	"mattwach/rpngo/bin/tinygo"
-	"mattwach/rpngo/functions"
-	"mattwach/rpngo/parse"
-	"mattwach/rpngo/rpn"
+	"mattwach/rpngo/common/functions"
+	"mattwach/rpngo/common/parse"
+	"mattwach/rpngo/common/rpn"
 	"time"
 )
 

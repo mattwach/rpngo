@@ -2,7 +2,7 @@ package tinygo
 
 import (
 	"machine"
-	"mattwach/rpngo/rpn"
+	"mattwach/rpngo/common/rpn"
 )
 
 const resetHelp = "Resets the calculator."
