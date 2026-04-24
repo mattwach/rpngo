@@ -8,7 +8,7 @@ import (
 	"image/color"
 	"mattwach/rpngo/drivers/tinygo/fonts"
 	"mattwach/rpngo/drivers/tinygo/pixel565"
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/window"
 
 	"tinygo.org/x/drivers/ili9341"
 	"tinygo.org/x/drivers/pixel"

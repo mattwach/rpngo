@@ -6,7 +6,7 @@ import (
 	"errors"
 	"image/color"
 	"mattwach/rpngo/drivers/tinygo/fonts"
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/window"
 
 	"tinygo.org/x/drivers/ili9341"
 )

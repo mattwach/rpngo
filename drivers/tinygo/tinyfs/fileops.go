@@ -5,7 +5,7 @@ package tinyfs
 import (
 	"errors"
 	"machine"
-	"mattwach/rpngo/elog"
+	"mattwach/rpngo/common/elog"
 	"os"
 
 	"tinygo.org/x/tinyfs"

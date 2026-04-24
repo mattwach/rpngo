@@ -6,7 +6,7 @@ package main
 
 import (
 	"machine"
-	"mattwach/rpngo/bin/tinygo"
+	"mattwach/rpngo/drivers/tinygo"
 	"mattwach/rpngo/common/functions"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"

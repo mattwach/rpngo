@@ -2,8 +2,8 @@ package ili9341
 
 import (
 	"image/color"
-	"mattwach/rpngo/elog"
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/elog"
+	"mattwach/rpngo/common/window"
 
 	"tinygo.org/x/drivers/ili9341"
 )

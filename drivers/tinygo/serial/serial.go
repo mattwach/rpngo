@@ -6,8 +6,8 @@ package serial
 
 import (
 	"machine"
-	"mattwach/rpngo/key"
-	"mattwach/rpngo/rpn"
+	"mattwach/rpngo/common/key"
+	"mattwach/rpngo/common/rpn"
 	"time"
 )
 

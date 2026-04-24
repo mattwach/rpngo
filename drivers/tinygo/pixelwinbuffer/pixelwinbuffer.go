@@ -18,8 +18,8 @@ import (
 	"errors"
 	"image/color"
 	"mattwach/rpngo/drivers/tinygo/fonts"
-	"mattwach/rpngo/elog"
-	"mattwach/rpngo/window"
+	"mattwach/rpngo/common/elog"
+	"mattwach/rpngo/common/window"
 )
 
 var bgcol = color.RGBA{}

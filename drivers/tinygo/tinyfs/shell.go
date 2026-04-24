@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mattwach/rpngo/elog"
+	"mattwach/rpngo/common/elog"
 	"os"
 )
 
