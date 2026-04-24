@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mattwach/rpngo/rpn"
+	"mattwach/rpngo/common/rpn"
 	"os"
 )
 

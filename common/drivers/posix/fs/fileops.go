@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"mattwach/rpngo/rpn"
+	"mattwach/rpngo/common/rpn"
 	"os"
 )
 
