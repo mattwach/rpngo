@@ -16,6 +16,7 @@ import (
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/key"
 	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/startup"
 	"mattwach/rpngo/common/window"
 	"path/filepath"
 	"strings"
@@ -42,15 +43,13 @@ type getLine struct {
 	fileList []string
 }
 
-const histFile = ".rpngo_history"
-
 func initGetLine(input Input, txtb *window.TextBuffer, fs fileops.FileOpsDriver) *getLine {
 	elog.Heap("alloc: /window/input/getline.go:41: gl := &getLine{")
 	elog.Heap("alloc: /window/input/getline.go:46: namesAndValues: make([]rpn.NameAndValues, 0, 8),")
 	var histpath string
 	home, err := fileops.HomeDir()
 	if err == nil {
-		histpath = filepath.Join(home, histFile)
+		histpath = filepath.Join(home, startup.HistFile)
 	}
 	gl := &getLine{ // object allocated on the heap: object size 6048 exceeds maximum stack allocation size 256
 		insertMode:   true,

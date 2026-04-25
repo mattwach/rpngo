@@ -3,10 +3,12 @@ package main
 
 import (
 	"fmt"
+	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
 	"os"
+	"path/filepath"
 
 	"github.com/chzyer/readline"
 )
@@ -29,7 +31,15 @@ func execLine(r *rpn.RPN, rl *readline.Instance) error {
 }
 
 func interactive(r *rpn.RPN) error {
-	rl, err := readline.New("> ")
+	histFile := startup.HistFile
+	home, err := fileops.HomeDir()
+	if err == nil {
+		histFile = filepath.Join(home, startup.HistFile)
+	}
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:      "> ",
+		HistoryFile: histFile,
+	})
 	if err != nil {
 		panic(err)
 	}

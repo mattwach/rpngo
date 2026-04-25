@@ -38,6 +38,7 @@ const commonStartup = `
 rad
 `
 
+const HistFile = ".rpngo_history"
 const configName = ".rpngo"
 
 // Startup tries to load .rpngo and tries to create a default
