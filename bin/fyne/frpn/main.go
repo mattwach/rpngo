@@ -3,9 +3,9 @@ package main
 
 import (
 	"fmt"
-	"mattwach/rpngo/common/functions"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/startup"
 	"os"
 
 	"github.com/chzyer/readline"
@@ -28,11 +28,7 @@ func execLine(r *rpn.RPN, rl *readline.Instance) error {
 	return nil
 }
 
-func run() error {
-	var r rpn.RPN
-	r.Init(256)
-	functions.RegisterAll(&r)
-
+func interactive(r *rpn.RPN) error {
 	rl, err := readline.New("> ")
 	if err != nil {
 		panic(err)
@@ -40,7 +36,7 @@ func run() error {
 	defer rl.Close()
 
 	for {
-		if err := execLine(&r, rl); err != nil {
+		if err := execLine(r, rl); err != nil {
 			break
 		}
 	}
@@ -49,7 +45,7 @@ func run() error {
 }
 
 func main() {
-	if err := run(); err != nil {
+	if err := startup.Run(interactive); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
