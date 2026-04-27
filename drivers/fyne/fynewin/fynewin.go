@@ -47,6 +47,7 @@ func (f *FyneWin) Run() {
 	<-f.wait
 	log.Printf("fyne starting")
 	f.fapp = app.New()
+	f.fapp.SetIcon(resourceRpngoiconPng)
 	// need to create a fyne window and hide it or it will kill rpngo
 	// when all windows are cleared
 	f.fapp.NewWindow("hidden")
