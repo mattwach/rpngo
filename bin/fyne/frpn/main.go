@@ -7,6 +7,7 @@ import (
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
+	"mattwach/rpngo/drivers/fyne/fynewin"
 	"os"
 	"path/filepath"
 
@@ -44,13 +45,21 @@ func interactive(r *rpn.RPN) error {
 		panic(err)
 	}
 	defer rl.Close()
+	fw := fynewin.FyneWin{}
+	fw.Register(r)
 
-	for {
-		if err := execLine(r, rl); err != nil {
-			break
+	go func() {
+		for {
+			if err := execLine(r, rl); err != nil {
+				break
+			}
+			fw.Update(r)
 		}
-	}
 
+		fw.Shutdown()
+	}()
+
+	fw.Run()
 	return nil
 }
 

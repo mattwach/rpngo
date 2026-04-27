@@ -5,6 +5,7 @@ import (
 	"mattwach/rpngo/common/elog"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window"
+	"mattwach/rpngo/common/window/common"
 	"mattwach/rpngo/common/window/stackwin"
 	"mattwach/rpngo/common/window/varwin"
 )
@@ -20,34 +21,7 @@ func InitWindowCommands(
 	root *window.WindowRoot,
 	screen window.Screen,
 	newPlotWindowFn func() (window.WindowWithProps, error)) *WindowCommands {
-	conceptHelp := map[string]string{
-		"window.layout": "Windows are arranged with window groups.  There\n" +
-			"is always a window group named 'root' which is the parent of all \n" +
-			"windows and groups.\n" +
-			"- Add a new window group to the root window with w.new.group.\n" +
-			"- Move a window or group to a different window group with w.move.beg and w.move.end\n" +
-			"- Change the weight of a window or group with w.weight (default weight is 100).\n" +
-			"- Change the layout mode of a window group to columns with w.columns.\n" +
-			"- Print info on all existing windows and groups with w.dump.\n" +
-			"- You may also set .wtarget, .wend, and .wweight to direct how and\n" +
-			"  where the next window/group will be create.  w.reset resets these\n" +
-			"  to .wtarget=root, .wend=true, .wweight=100. Using illegal types or\n" +
-			"  values for these variables will cause them to revert to the defaults\n" +
-			"  as well.\n" +
-			"See Also: windows, window.props",
-
-		"window.props": "Each window supports properties that changes how the window operates\n" +
-			"- Print all properties and values for a window with w.listp\n" +
-			"- Get a single property with w.getp\n" +
-			"- Set a single property with w.setp\n" +
-			"See Also: windows, window.layout, plotting",
-
-		"windows": "The display can be customized with different windows\n" +
-			"- Add a window with a w.new.<type> command. Example: w.new.stack\n" +
-			"- Reset to a single window with w.reset.\n" +
-			"See Also: window.layout, window.props",
-	}
-	r.RegisterConceptHelp(conceptHelp)
+	common.RegisterConceptHelp(r, true)
 	elog.Heap("alloc: /window/commands/window.go:50: wc := WindowCommands{root: root, screen: screen, newPlotWindowFn: newPlotWindowFn}")
 	wc := WindowCommands{root: root, screen: screen, newPlotWindowFn: newPlotWindowFn} // object allocated on the heap: escapes at line 65
 	r.Register("snapshot", wc.snapshot, rpn.CatIO, snapshotHelp)
@@ -58,7 +32,7 @@ func InitWindowCommands(
 	r.Register("w.move.end", wc.wMoveEnd, rpn.CatWindow, wMoveEndHelp)
 	r.Register("w.new.group", wc.wNewGroup, rpn.CatWindow, wNewGroupHelp)
 	r.Register("w.new.plot", wc.wNewPlot, rpn.CatWindow, wNewPlotHelp)
-	r.Register("w.new.stack", wc.wNewStack, rpn.CatWindow, wNewStackHelp)
+	r.Register("w.new.stack", wc.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", wc.wNewVar, rpn.CatWindow, wNewVarHelp)
 	r.Register("w.listp", wc.wListP, rpn.CatWindow, wListPHelp)
 	r.Register("w.getp", wc.wGetP, rpn.CatWindow, wGetPHelp)
@@ -180,9 +154,6 @@ func (wc *WindowCommands) wNewGroup(r *rpn.RPN) error {
 	return nil
 }
 
-const wNewStackHelp = "Creates a new stack window with the given name and\n" +
-	"adds it to the root window. Example: 's1' w.new.stack"
-
 func (wc *WindowCommands) wNewStack(r *rpn.RPN) error {
 	txtw, name, err := wc.newTextWindow(r)
 	if err != nil {
@@ -236,18 +207,15 @@ func (wc *WindowCommands) newTextWindow(r *rpn.RPN) (window.TextWindow, string, 
 }
 
 func (wc *WindowCommands) newWindowNameFromStack(r *rpn.RPN) (string, error) {
-	name, err := r.PopFrame()
+	name, err := common.NewWindowNameFromStack(r)
 	if err != nil {
 		return "", err
 	}
-	if !name.IsString() {
-		return "", rpn.ErrExpectedAString
-	}
-	existing := wc.root.FindWindow(name.UnsafeString())
+	existing := wc.root.FindWindow(name)
 	if existing != nil {
 		return "", rpn.ErrWindowAlreadyExists
 	}
-	return name.UnsafeString(), nil
+	return name, nil
 }
 
 const wWeightHelp = "Changes the weight of a window or window group causing it\n" +
