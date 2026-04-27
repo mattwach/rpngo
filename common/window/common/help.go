@@ -38,3 +38,6 @@ func RegisterConceptHelp(r *rpn.RPN, supportsLayout bool) {
 
 const WNewStackHelp = "Creates a new stack window with the given name and\n" +
 	"adds it to the root window. Example: 's1' w.new.stack"
+
+const WNewPlotHelp = "Creates a new plot window with the given name and\n" +
+	"adds it to the root window. Example: 'p1' w.new.plot"

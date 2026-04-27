@@ -31,7 +31,7 @@ func InitWindowCommands(
 	r.Register("w.move.beg", wc.wMoveBeg, rpn.CatWindow, wMoveBegHelp)
 	r.Register("w.move.end", wc.wMoveEnd, rpn.CatWindow, wMoveEndHelp)
 	r.Register("w.new.group", wc.wNewGroup, rpn.CatWindow, wNewGroupHelp)
-	r.Register("w.new.plot", wc.wNewPlot, rpn.CatWindow, wNewPlotHelp)
+	r.Register("w.new.plot", wc.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", wc.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", wc.wNewVar, rpn.CatWindow, wNewVarHelp)
 	r.Register("w.listp", wc.wListP, rpn.CatWindow, wListPHelp)
@@ -165,9 +165,6 @@ func (wc *WindowCommands) wNewStack(r *rpn.RPN) error {
 	wc.root.AddWindowChild(r, &sw, name)
 	return nil
 }
-
-const wNewPlotHelp = "Creates a new plot window with the given name and\n" +
-	"adds it to the root window. Example: 'p1' w.new.plot"
 
 func (wc *WindowCommands) wNewPlot(r *rpn.RPN) error {
 	name, err := wc.newWindowNameFromStack(r)

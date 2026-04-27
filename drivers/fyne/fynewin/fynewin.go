@@ -11,6 +11,7 @@ import (
 	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/common"
+	"mattwach/rpngo/drivers/fyne/fynewin/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
 
 	"fyne.io/fyne/v2"
@@ -30,6 +31,7 @@ type FyneWin struct {
 
 func (f *FyneWin) Register(r *rpn.RPN) {
 	common.RegisterConceptHelp(r, false)
+	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 }
 
@@ -83,7 +85,7 @@ func (f *FyneWin) Shutdown() {
 	f.fapp = nil
 }
 
-func (f *FyneWin) wNewStack(r *rpn.RPN) error {
+func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) FyneWinChild) error {
 	name, err := common.NewWindowNameFromStack(r)
 	if err != nil {
 		return err
@@ -94,9 +96,21 @@ func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 	}
 	f.makeReady()
 	fyne.DoAndWait(func() {
-		w := f.fapp.NewWindow("stack: " + name)
-		f.children[name] = stackwin.New(w, r)
+		w := f.fapp.NewWindow(prefix + ": " + name)
+		f.children[name] = prepare(w)
 		w.Show()
 	})
 	return nil
+}
+
+func (f *FyneWin) wNewStack(r *rpn.RPN) error {
+	return f.wNew(r, "stack", func(w fyne.Window) FyneWinChild {
+		return stackwin.New(w, r)
+	})
+}
+
+func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
+	return f.wNew(r, "plot", func(w fyne.Window) FyneWinChild {
+		return plotwin.New(w)
+	})
 }
