@@ -33,13 +33,17 @@ func New(win fyne.Window, r *rpn.RPN) *StackWin {
 }
 
 func (sw *StackWin) Update(r *rpn.RPN) {
-	lines := make([]string, 0)
-	for i, f := range r.Frames {
-		lines = append(
-			lines,
-			fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.String(true)))
+	if len(r.Frames) > 0 {
+		lines := make([]string, 0)
+		for i, f := range r.Frames {
+			lines = append(
+				lines,
+				fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.String(true)))
+		}
+		sw.data.SetText(strings.Join(lines, "\n"))
+	} else {
+		sw.data.SetText("stack empty")
 	}
-	sw.data.SetText(strings.Join(lines, "\n"))
 	sw.data.CursorColumn = 0
 	sw.data.CursorRow = len(r.Frames)
 }
