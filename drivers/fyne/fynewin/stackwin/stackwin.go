@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// StackWin holds teh context for a stack window.
+// StackWin holds the context for a stack window.
 // Important, RPN is owned by the readline goroutine thus should be accessed
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.

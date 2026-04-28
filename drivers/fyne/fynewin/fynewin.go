@@ -111,6 +111,6 @@ func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 	return f.wNew(r, "plot", func(w fyne.Window) FyneWinChild {
-		return plotwin.New(w)
+		return plotwin.New(w, r)
 	})
 }
