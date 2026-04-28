@@ -10,28 +10,24 @@ package fynewin
 import (
 	"log"
 	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/window"
 	"mattwach/rpngo/common/window/common"
-	"mattwach/rpngo/drivers/fyne/fynewin/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
-type FyneWinChild interface {
-	Update(r *rpn.RPN)
-}
-
 type FyneWin struct {
 	wait     chan bool
 	ready    chan bool
 	fapp     fyne.App
-	children map[string]FyneWinChild
+	children map[string]window.WindowWithProps
 }
 
 func (f *FyneWin) Register(r *rpn.RPN) {
 	common.RegisterConceptHelp(r, false)
-	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
+	//r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 }
 
@@ -44,7 +40,7 @@ func (f *FyneWin) Register(r *rpn.RPN) {
 func (f *FyneWin) Run() {
 	f.wait = make(chan bool, 1)
 	f.ready = make(chan bool, 1)
-	f.children = make(map[string]FyneWinChild)
+	f.children = make(map[string]window.WindowWithProps)
 	log.Printf("fyne idle")
 	<-f.wait
 	log.Printf("fyne starting")
@@ -64,7 +60,7 @@ func (f *FyneWin) Update(r *rpn.RPN) {
 	// Update is likely called from the readline goroutine.
 	fyne.DoAndWait(func() {
 		for _, c := range f.children {
-			c.Update(r)
+			c.Update(r, true)
 		}
 	})
 }
@@ -85,7 +81,7 @@ func (f *FyneWin) Shutdown() {
 	f.fapp = nil
 }
 
-func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) FyneWinChild) error {
+func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) window.WindowWithProps) error {
 	name, err := common.NewWindowNameFromStack(r)
 	if err != nil {
 		return err
@@ -104,13 +100,15 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) Fyne
 }
 
 func (f *FyneWin) wNewStack(r *rpn.RPN) error {
-	return f.wNew(r, "stack", func(w fyne.Window) FyneWinChild {
+	return f.wNew(r, "stack", func(w fyne.Window) window.WindowWithProps {
 		return stackwin.New(w, r)
 	})
 }
 
+/*
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
-	return f.wNew(r, "plot", func(w fyne.Window) FyneWinChild {
+	return f.wNew(r, "plot", func(w fyne.Window) window.WindowWithProps {
 		return plotwin.New(w, r)
 	})
 }
+*/
