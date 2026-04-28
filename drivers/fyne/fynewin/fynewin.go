@@ -42,10 +42,15 @@ func (f *FyneWin) Register(r *rpn.RPN) {
 func (f *FyneWin) Run() {
 	f.wait = make(chan bool, 1)
 	f.ready = make(chan bool, 1)
-	f.children = make(map[string]window.WindowWithProps)
 	log.Printf("fyne idle")
-	<-f.wait
+	start := <-f.wait
+	if !start {
+		// fyne was never needed
+		return
+	}
+
 	log.Printf("fyne starting")
+	f.children = make(map[string]window.WindowWithProps)
 	f.fapp = app.New()
 	f.fapp.SetIcon(resourceRpngoiconPng)
 	// need to create a fyne window and hide it or it will kill rpngo
@@ -85,6 +90,7 @@ func (f *FyneWin) makeReady() {
 
 func (f *FyneWin) Shutdown() {
 	if f.fapp == nil {
+		f.wait <- false
 		return
 	}
 	f.fapp.Quit()
