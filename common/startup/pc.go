@@ -18,21 +18,25 @@ import (
 
 const defaultConfig = commonStartup + `
 # Create and layout windows
+'w.new.group' exists
 {
-  'g' w.new.group
-  'g' w.columns
-  'i' 'g' w.move.end
-  'i' 25 w.weight
-  'g2' w.new.group
-  'g2' 25 w.weight
-  'g2' w.columns
-  'g2' .wtarget=
-  's' w.new.stack
-  'v' w.new.var
-  'g' .wtarget=
-} .init=
-
-@.init
+  {
+    'g' w.new.group
+    'g' w.columns
+    'i' 'g' w.move.end
+    'i' 25 w.weight
+    'g2' w.new.group
+    'g2' 25 w.weight
+    'g2' w.columns
+    'g2' .wtarget=
+    's' w.new.stack
+    'v' w.new.var
+    'g' .wtarget=
+  }
+  .init=
+  @.init
+}
+if
 
 {
   time t1=
@@ -43,8 +47,10 @@ const defaultConfig = commonStartup + `
 {$.plotwin w.new.plot} .plotinit=
 
 {histl} {0/} try
-hists
-'i' 'autohist' true w.setp
+{
+  hists
+  'i' 'autohist' true w.setp
+} {0/} try
 
 '/dev/ttyACM0' .serial=
 `

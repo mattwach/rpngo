@@ -32,17 +32,10 @@ func New(win fyne.Window, r *rpn.RPN) *PlotWin {
 	pw.canvas.FillMode = canvas.ImageFillContain
 	pw.win.SetContent(container.NewStack(pw.canvas))
 	pw.win.Resize(fyne.NewSize(1024, 768))
-	pw.Update(r)
 	return pw
 }
 
-func (pw *PlotWin) Update(r *rpn.RPN) {
-	pw.img.SetRGB(0, 0, 0)
-	pw.img.Clear()
-	pw.img.SetRGB(1, 1, 0)
-	pw.img.DrawCircle(512, 512, 100)
-	pw.img.Fill()
-}
+func (pw *PlotWin) Update(r *rpn.RPN) {}
 
 // We conform to the window/PixelWindow Interface so that common logic can
 // update the plot

@@ -3,10 +3,12 @@ package main
 
 import (
 	"fmt"
+	"mattwach/rpngo/common/drivers/posix/fs"
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
+	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin"
 	"os"
 	"path/filepath"
@@ -47,6 +49,11 @@ func interactive(r *rpn.RPN) error {
 	defer rl.Close()
 	fw := fynewin.FyneWin{}
 	fw.Register(r)
+
+	_ = plotwin.InitPlotCommands(r, &fw, nil)
+	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
+		return err
+	}
 
 	go func() {
 		for {

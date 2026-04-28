@@ -215,7 +215,11 @@ func (wc *PlotCommands) initPlot(r *rpn.RPN) error {
 	if err := parse.Fields(macro, r.Exec); err != nil {
 		return err
 	}
-	w, h := wc.screen.ScreenSize()
+	var w int
+	var h int
+	if wc.screen != nil {
+		w, h = wc.screen.ScreenSize()
+	}
 	if uerr := wc.manager.Update(r, w, h, false); uerr != nil {
 		elog.Heap("alloc: /window/plotwin/command.go:118: elog.Print('initPlot.Update error: ', uerr.Error())")
 		elog.Print("initPlot.Update error: ", uerr.Error()) // object allocated on the heap: escapes at line 118
