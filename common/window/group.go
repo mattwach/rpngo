@@ -5,15 +5,6 @@ import (
 	"strconv"
 )
 
-type WindowWithProps interface {
-	WindowBase
-	Update(r *rpn.RPN, force bool) error
-	Type() string
-	SetProp(name string, val rpn.Frame) error
-	GetProp(name string) (rpn.Frame, error)
-	ListProps() []string
-}
-
 type windowGroupEntry struct {
 	name   string
 	weight int

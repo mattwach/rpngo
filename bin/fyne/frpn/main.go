@@ -8,6 +8,7 @@ import (
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
+	"mattwach/rpngo/common/window/commands"
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin"
 	"os"
@@ -50,6 +51,7 @@ func interactive(r *rpn.RPN) error {
 	fw := fynewin.FyneWin{}
 	fw.Register(r)
 
+	_ = commands.InitWindowManagerCommands(r, &fw)
 	_ = plotwin.InitPlotCommands(r, &fw, nil)
 	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
 		return err

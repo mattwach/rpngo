@@ -23,9 +23,9 @@ type PixelPlotWindow struct {
 	needUpdate bool
 }
 
-func (pw *PixelPlotWindow) Init(pixw window.PixelWindow) {
+func (pw *PixelPlotWindow) Init(pixw window.PixelWindow, steps uint32) {
 	pw.pixw = pixw
-	pw.common.init(uint8(len(colorWheelPixel)))
+	pw.common.init(uint8(len(colorWheelPixel)), steps)
 }
 
 func (pw *PixelPlotWindow) ResizeWindow(x, y, w, h int) error {

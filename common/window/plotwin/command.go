@@ -11,19 +11,14 @@ import (
 	"strings"
 )
 
-type WindowManager interface {
-	FindWindow(name string) window.WindowWithProps
-	Update(r *rpn.RPN, screenw, screenh int, updateInput bool) error
-}
-
 type PlotCommands struct {
-	manager WindowManager
+	manager window.WindowManager
 	screen  window.Screen
 }
 
 func InitPlotCommands(
 	r *rpn.RPN,
-	manager WindowManager,
+	manager window.WindowManager,
 	screen window.Screen) *PlotCommands {
 	conceptHelp := map[string]string{
 		"plot": "Plot functions using plot. Plot will push an 'x' value to the stack,\n" +

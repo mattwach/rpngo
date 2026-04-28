@@ -23,7 +23,7 @@ type TxtPlotWindow struct {
 
 func (pw *TxtPlotWindow) Init(txtw window.TextWindow) {
 	pw.txtw = txtw
-	pw.common.init(uint8(len(colorWheelTxt)))
+	pw.common.init(uint8(len(colorWheelTxt)), 250)
 }
 
 func (pw *TxtPlotWindow) ResizeWindow(x, y, w, h int) error {

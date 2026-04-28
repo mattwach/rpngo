@@ -15,16 +15,23 @@ import (
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/fyneplotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
+	"sort"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
+type child struct {
+	wprops window.WindowWithProps
+	fwin   fyne.Window
+}
+
 type FyneWin struct {
 	wait     chan bool
 	ready    chan bool
 	fapp     fyne.App
-	children map[string]window.WindowWithProps
+	children map[string]child
 }
 
 func (f *FyneWin) Register(r *rpn.RPN) {
@@ -50,7 +57,7 @@ func (f *FyneWin) Run() {
 	}
 
 	log.Printf("fyne starting")
-	f.children = make(map[string]window.WindowWithProps)
+	f.children = make(map[string]child)
 	f.fapp = app.New()
 	f.fapp.SetIcon(resourceRpngoiconPng)
 	// need to create a fyne window and hide it or it will kill rpngo
@@ -66,18 +73,74 @@ func (f *FyneWin) Update(r *rpn.RPN, sw, sh int, updateInput bool) error {
 	if f.fapp == nil {
 		return nil
 	}
+	var err error
 	// Update is likely called from the readline goroutine.
 	fyne.DoAndWait(func() {
 		for _, c := range f.children {
-			c.Update(r, updateInput)
+			err = c.wprops.Update(r, true)
+			if err != nil {
+				break
+			}
 		}
 	})
-	return nil
+	return err
+}
+
+func (f *FyneWin) UpdateByName(r *rpn.RPN, name string, force bool) error {
+	w := f.children[name].wprops
+	if w == nil {
+		return rpn.ErrNotFound
+	}
+	return w.Update(r, force)
+}
+
+func (f *FyneWin) Snapshot(buff []byte, name string) ([]byte, error) {
+	// TODO: implement
+	return buff, nil
 }
 
 // Needed for compatibility with the plorwin.WindowManager interface
 func (f *FyneWin) FindWindow(name string) window.WindowWithProps {
-	return f.children[name]
+	return f.children[name].wprops
+}
+
+// Needed for compatibility with the plorwin.WindowManager interface
+func (f *FyneWin) DeleteWindowOrGroup(name string) error {
+	w := f.children[name].fwin
+	if w == nil {
+		return rpn.ErrNotFound
+	}
+	w.Close()
+	delete(f.children, name)
+	return nil
+}
+
+// Needed for compatibility with the plorwin.WindowManager interface
+func (f *FyneWin) Dump(r *rpn.RPN) {
+	var names []string
+	for name := range f.children {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		c := f.children[name]
+		w, h := c.wprops.WindowSize()
+		pad(r, 1)
+		r.Print(name)
+		r.Print("(type=")
+		r.Print(c.wprops.Type())
+		r.Print(", w=")
+		r.Print(strconv.Itoa(w))
+		r.Print(", h=")
+		r.Print(strconv.Itoa(h))
+		r.Print(")\n")
+	}
+}
+
+func pad(r *rpn.RPN, indent int) {
+	for range indent {
+		r.Print("  ")
+	}
 }
 
 func (f *FyneWin) makeReady() {
@@ -102,14 +165,14 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) wind
 	if err != nil {
 		return err
 	}
-	existing := f.children[name]
-	if existing != nil {
+	_, ok := f.children[name]
+	if ok {
 		return rpn.ErrWindowAlreadyExists
 	}
 	f.makeReady()
 	fyne.DoAndWait(func() {
 		w := f.fapp.NewWindow(prefix + ": " + name)
-		f.children[name] = prepare(w)
+		f.children[name] = child{prepare(w), w}
 		w.Show()
 	})
 	return nil
@@ -124,7 +187,7 @@ func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 	return f.wNew(r, "plot", func(w fyne.Window) window.WindowWithProps {
 		ppw := &plotwin.PixelPlotWindow{}
-		ppw.Init(fyneplotwin.New(w, r))
+		ppw.Init(fyneplotwin.New(w, r), 4096)
 		return ppw
 	})
 }

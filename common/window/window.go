@@ -1,8 +1,20 @@
 package window
 
-import "image/color"
+import (
+	"image/color"
+	"mattwach/rpngo/common/rpn"
+)
 
 var BorderColor = color.RGBA{B: 100}
+
+type WindowManager interface {
+	DeleteWindowOrGroup(name string) error
+	Dump(r *rpn.RPN)
+	FindWindow(name string) WindowWithProps
+	Snapshot(buff []byte, name string) ([]byte, error)
+	Update(r *rpn.RPN, screenw, screenh int, updateInput bool) error
+	UpdateByName(r *rpn.RPN, name string, updateInput bool) error
+}
 
 type Screen interface {
 	// Create a new TextWindow. If a graphics screen, x, y, w and h
@@ -26,6 +38,15 @@ type WindowBase interface {
 	// windowXY is in pixels
 	WindowXY() (int, int)
 	WindowSize() (int, int)
+}
+
+type WindowWithProps interface {
+	WindowBase
+	Update(r *rpn.RPN, force bool) error
+	Type() string
+	SetProp(name string, val rpn.Frame) error
+	GetProp(name string) (rpn.Frame, error)
+	ListProps() []string
 }
 
 // TextWindow is output for a screen that displays monospaced text

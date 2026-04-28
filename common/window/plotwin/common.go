@@ -70,12 +70,12 @@ type plotWindowCommon struct {
 	stats     PointStats
 }
 
-func (pw *plotWindowCommon) init(numColors uint8) {
+func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
 	pw.autox = true
 	pw.autoy = true
 	pw.minv = -1
 	pw.maxv = 1
-	pw.steps = 250
+	pw.steps = steps
 	pw.numColors = numColors
 }
 

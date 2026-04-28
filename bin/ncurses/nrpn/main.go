@@ -41,7 +41,8 @@ func interactive(r *rpn.RPN) error {
 		tpw.Init(pw)
 		return &tpw, nil
 	}
-	_ = commands.InitWindowCommands(r, &root, screen, newTextPlotWindow)
+	_ = commands.InitWindowManagerCommands(r, &root)
+	_ = commands.InitWindowRootCommands(r, &root, screen, newTextPlotWindow)
 	_ = plotwin.InitPlotCommands(r, &root, screen)
 	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
 		return err
