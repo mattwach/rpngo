@@ -12,6 +12,8 @@ import (
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window"
 	"mattwach/rpngo/common/window/common"
+	"mattwach/rpngo/common/window/plotwin"
+	"mattwach/rpngo/drivers/fyne/fynewin/fyneplotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
 
 	"fyne.io/fyne/v2"
@@ -27,7 +29,7 @@ type FyneWin struct {
 
 func (f *FyneWin) Register(r *rpn.RPN) {
 	common.RegisterConceptHelp(r, false)
-	//r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
+	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 }
 
@@ -53,16 +55,24 @@ func (f *FyneWin) Run() {
 	f.fapp.Run()
 }
 
-func (f *FyneWin) Update(r *rpn.RPN) {
+// Note that sw, sh and updateInput are for interface compatibility with
+// with plotwin.WindowManager interface
+func (f *FyneWin) Update(r *rpn.RPN, sw, sh int, updateInput bool) error {
 	if f.fapp == nil {
-		return
+		return nil
 	}
 	// Update is likely called from the readline goroutine.
 	fyne.DoAndWait(func() {
 		for _, c := range f.children {
-			c.Update(r, true)
+			c.Update(r, updateInput)
 		}
 	})
+	return nil
+}
+
+// Needed for compatibility with the plorwin.WindowManager interface
+func (f *FyneWin) FindWindow(name string) window.WindowWithProps {
+	return f.children[name]
 }
 
 func (f *FyneWin) makeReady() {
@@ -105,10 +115,10 @@ func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 	})
 }
 
-/*
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 	return f.wNew(r, "plot", func(w fyne.Window) window.WindowWithProps {
-		return plotwin.New(w, r)
+		ppw := &plotwin.PixelPlotWindow{}
+		ppw.Init(fyneplotwin.New(w, r))
+		return ppw
 	})
 }
-*/

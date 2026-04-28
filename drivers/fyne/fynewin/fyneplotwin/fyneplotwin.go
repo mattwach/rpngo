@@ -1,4 +1,4 @@
-package plotwin
+package fyneplotwin
 
 import (
 	"image/color"

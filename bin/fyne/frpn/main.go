@@ -53,7 +53,7 @@ func interactive(r *rpn.RPN) error {
 			if err := execLine(r, rl); err != nil {
 				break
 			}
-			fw.Update(r)
+			fw.Update(r, 0, 0, true)
 		}
 
 		fw.Shutdown()
