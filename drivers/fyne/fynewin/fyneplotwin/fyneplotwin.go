@@ -67,7 +67,7 @@ func (pw *PlotWin) WindowSize() (int, int) {
 }
 
 func (pw *PlotWin) Refresh() {
-	pw.win.SetContent(container.NewStack(pw.canvas))
+	pw.canvas.Refresh()
 	// clear the next time drawing is started
 	pw.clearFirst = true
 }
