@@ -1,15 +1,42 @@
 package fyneplotwin
 
 import (
+	"fmt"
 	"image/color"
 	"mattwach/rpngo/common/rpn"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/fogleman/gg"
 )
+
+type interactiveImage struct {
+	widget.BaseWidget
+	ggimg *gg.Context
+	image *canvas.Image
+}
+
+// MouseMoved captures continuous movement over the image
+func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
+	s := fmt.Sprintf("(%.2f, %.2f)", ev.Position.X, ev.Position.Y)
+	i.ggimg.SetRGB(0, 0, 1)
+	i.ggimg.DrawRectangle(50, 30, 150, 25)
+	i.ggimg.Fill()
+	i.ggimg.SetRGB(1, 1, 1)
+	i.ggimg.DrawString(s, 50, 50)
+	i.image.Refresh()
+}
+
+func (i *interactiveImage) MouseIn(ev *desktop.MouseEvent) {}
+func (i *interactiveImage) MouseOut()                      {}
+
+func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(i.image)
+}
 
 // PlotWin holds the context for a stack window.
 // Important, RPN is owned by the readline goroutine thus should be accessed
@@ -17,8 +44,7 @@ import (
 // probably starting down a bad path.
 type PlotWin struct {
 	win        fyne.Window
-	img        *gg.Context
-	canvas     *canvas.Image
+	canvas     interactiveImage
 	color      color.RGBA
 	clearFirst bool
 }
@@ -26,12 +52,12 @@ type PlotWin struct {
 func New(win fyne.Window, r *rpn.RPN) *PlotWin {
 	pw := &PlotWin{
 		win:        win,
-		img:        gg.NewContext(1024, 768),
 		clearFirst: true,
 	}
 
-	pw.canvas = canvas.NewImageFromImage(pw.img.Image())
-	pw.win.SetContent(container.NewStack(pw.canvas))
+	pw.canvas.ggimg = gg.NewContext(1024, 768)
+	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
+	pw.win.SetContent(container.NewStack(&pw.canvas))
 	pw.win.Resize(fyne.NewSize(1024, 768))
 	return pw
 }
@@ -40,9 +66,9 @@ func (pw *PlotWin) clearIfNeeded() {
 	if !pw.clearFirst {
 		return
 	}
-	pw.img.SetRGB(0, 0, 0)
-	pw.img.Clear()
-	pw.img.SetColor(pw.color)
+	pw.canvas.ggimg.SetRGB(0, 0, 0)
+	pw.canvas.ggimg.Clear()
+	pw.canvas.ggimg.SetColor(pw.color)
 	pw.clearFirst = false
 }
 
@@ -63,11 +89,11 @@ func (pw *PlotWin) WindowXY() (int, int) {
 }
 
 func (pw *PlotWin) WindowSize() (int, int) {
-	return pw.img.Width(), pw.img.Height()
+	return pw.canvas.ggimg.Width(), pw.canvas.ggimg.Height()
 }
 
 func (pw *PlotWin) Refresh() {
-	pw.canvas.Refresh()
+	pw.canvas.image.Refresh()
 	// clear the next time drawing is started
 	pw.clearFirst = true
 }
@@ -78,33 +104,33 @@ func (pw *PlotWin) PixelSize() (int, int) {
 
 func (pw *PlotWin) Color(c color.RGBA) {
 	pw.color = c
-	pw.img.SetColor(c)
+	pw.canvas.ggimg.SetColor(c)
 }
 
 func (pw *PlotWin) SetPoint(x, y int) {
 	pw.clearIfNeeded()
-	pw.img.SetPixel(x, y)
+	pw.canvas.ggimg.SetPixel(x, y)
 }
 
 func (pw *PlotWin) HLine(x, y, w int) {
 	pw.clearIfNeeded()
-	pw.img.DrawLine(float64(x), float64(y), float64(x+w), float64(y))
-	pw.img.Stroke()
+	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x+w), float64(y))
+	pw.canvas.ggimg.Stroke()
 }
 
 func (pw *PlotWin) VLine(x, y, h int) {
 	pw.clearIfNeeded()
-	pw.img.DrawLine(float64(x), float64(y), float64(x), float64(y+h))
-	pw.img.Stroke()
+	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x), float64(y+h))
+	pw.canvas.ggimg.Stroke()
 }
 
 func (pw *PlotWin) FilledRect(x, y, w, h int) {
 	pw.clearIfNeeded()
-	pw.img.DrawRectangle(float64(x), float64(y), float64(w), float64(h))
-	pw.img.Fill()
+	pw.canvas.ggimg.DrawRectangle(float64(x), float64(y), float64(w), float64(h))
+	pw.canvas.ggimg.Fill()
 }
 
 func (pw *PlotWin) Text(s string, x, y int) {
 	pw.clearIfNeeded()
-	pw.img.DrawString(s, float64(x), float64(y))
+	pw.canvas.ggimg.DrawString(s, float64(x), float64(y))
 }
