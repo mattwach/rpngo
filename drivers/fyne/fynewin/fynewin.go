@@ -30,11 +30,17 @@ type child struct {
 type FyneWin struct {
 	wait     chan bool
 	ready    chan bool
+	rpnInst  chan *rpn.RPN
 	fapp     fyne.App
 	children map[string]child
 }
 
-func (f *FyneWin) Register(r *rpn.RPN) {
+func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
+	f.rpnInst = rpnInst
+	r := <-f.rpnInst
+	defer func() {
+		f.rpnInst <- r
+	}()
 	common.RegisterConceptHelp(r, false)
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
@@ -74,15 +80,12 @@ func (f *FyneWin) Update(r *rpn.RPN, sw, sh int, updateInput bool) error {
 		return nil
 	}
 	var err error
-	// Update is likely called from the readline goroutine.
-	fyne.DoAndWait(func() {
-		for _, c := range f.children {
-			err = c.wprops.Update(r, true)
-			if err != nil {
-				break
-			}
+	for _, c := range f.children {
+		err = c.wprops.Update(r, true)
+		if err != nil {
+			break
 		}
-	})
+	}
 	return err
 }
 
@@ -156,7 +159,9 @@ func (f *FyneWin) Shutdown() {
 		f.wait <- false
 		return
 	}
-	f.fapp.Quit()
+	fyne.DoAndWait(func() {
+		f.fapp.Quit()
+	})
 	f.fapp = nil
 }
 
@@ -190,7 +195,7 @@ func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 	return f.wNew(r, "plot", func(w fyne.Window) window.WindowWithProps {
 		ppw := &plotwin.PixelPlotWindow{}
-		ppw.Init(fyneplotwin.New(w, r), 4096)
+		ppw.Init(fyneplotwin.New(w, f.rpnInst, ppw), 4096)
 		return ppw
 	})
 }

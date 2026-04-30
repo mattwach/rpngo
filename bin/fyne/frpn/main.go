@@ -17,11 +17,15 @@ import (
 	"github.com/chzyer/readline"
 )
 
-func execLine(r *rpn.RPN, rl *readline.Instance) error {
+func execLine(rpnInst chan *rpn.RPN, rl *readline.Instance, fw *fynewin.FyneWin) error {
 	line, err := rl.Readline()
 	if err != nil {
 		return err
 	}
+	r := <-rpnInst
+	defer func() {
+		rpnInst <- r
+	}()
 	err = parse.Fields(line, r.Exec)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
@@ -31,10 +35,32 @@ func execLine(r *rpn.RPN, rl *readline.Instance) error {
 		fmt.Println(f.String(true))
 	}
 
+	fw.Update(r, 0, 0, true)
 	return nil
 }
 
 func interactive(r *rpn.RPN) error {
+	// pack rpn into a channel so it can be shared between the readline and fyne
+	// goroutines.
+	rpnInst := make(chan *rpn.RPN, 1)
+	rpnInst <- r
+	return interactiveChannel(rpnInst)
+}
+
+func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
+	r := <-rpnInst
+	defer func() {
+		rpnInst <- r
+	}()
+	_ = commands.InitWindowManagerCommands(r, fw)
+	_ = plotwin.InitPlotCommands(r, fw, nil)
+	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func interactiveChannel(rpnInst chan *rpn.RPN) error {
 	histFile := startup.HistFile
 	home, err := fileops.HomeDir()
 	if err == nil {
@@ -49,20 +75,16 @@ func interactive(r *rpn.RPN) error {
 	}
 	defer rl.Close()
 	fw := fynewin.FyneWin{}
-	fw.Register(r)
+	fw.Register(rpnInst)
 
-	_ = commands.InitWindowManagerCommands(r, &fw)
-	_ = plotwin.InitPlotCommands(r, &fw, nil)
-	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
+	if err := initRPN(rpnInst, &fw); err != nil {
 		return err
 	}
-
 	go func() {
 		for {
-			if err := execLine(r, rl); err != nil {
+			if err := execLine(rpnInst, rl, &fw); err != nil {
 				break
 			}
-			fw.Update(r, 0, 0, true)
 		}
 
 		fw.Shutdown()
