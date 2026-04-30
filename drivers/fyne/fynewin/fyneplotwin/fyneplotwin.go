@@ -49,6 +49,7 @@ type PlotWin struct {
 	clearFirst bool
 }
 
+// New is expected to be called in the context of the main thread.
 func New(win fyne.Window, r *rpn.RPN) *PlotWin {
 	pw := &PlotWin{
 		win:        win,
@@ -92,8 +93,11 @@ func (pw *PlotWin) WindowSize() (int, int) {
 	return pw.canvas.ggimg.Width(), pw.canvas.ggimg.Height()
 }
 
+// Refresh is expected to be called outside of the main fyne thread.
 func (pw *PlotWin) Refresh() {
-	pw.canvas.image.Refresh()
+	fyne.DoAndWait(func() {
+		pw.canvas.image.Refresh()
+	})
 	// clear the next time drawing is started
 	pw.clearFirst = true
 }
