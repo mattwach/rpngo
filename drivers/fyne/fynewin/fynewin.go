@@ -172,6 +172,9 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) wind
 	f.makeReady()
 	fyne.DoAndWait(func() {
 		w := f.fapp.NewWindow(prefix + ": " + name)
+		w.SetOnClosed(func() {
+			delete(f.children, name)
+		})
 		f.children[name] = child{prepare(w), w}
 		w.Show()
 	})
