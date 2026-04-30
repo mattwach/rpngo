@@ -20,6 +20,10 @@ func TestPower(t *testing.T) {
 			Want: []string{"8"},
 		},
 		{
+			Args: []string{"-6", "2", "**"},
+			Want: []string{"36"},
+		},
+		{
 			Args: []string{"2d", "3", "**"},
 			Want: []string{"8"},
 		},
