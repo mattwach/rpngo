@@ -251,6 +251,14 @@ func (pw *plotWindowCommon) adjustAutoY() {
 	pw.miny -= delta
 }
 
+func (pw *plotWindowCommon) pixelToCoordX(x, w int) float64 {
+	return pw.minx + (pw.maxx-pw.minx)*(float64(x)/float64(w))
+}
+
+func (pw *plotWindowCommon) pixelToCoordY(y, h int) float64 {
+	return pw.miny + (pw.maxy-pw.miny)*(float64(y)/float64(h))
+}
+
 func (pw *plotWindowCommon) transformX(x float64, w int) (int, bool) {
 	x = (x - pw.minx) / (pw.maxx - pw.minx)
 	if x < 0 {

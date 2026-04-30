@@ -29,7 +29,8 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	defer func() {
 		i.inMainContext = false
 	}()
-	s := fmt.Sprintf("(%.2f, %.2f)", ev.Position.X, ev.Position.Y)
+	x, y := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
+	s := fmt.Sprintf("(%.4f, %.4f)", x, y)
 	i.ggimg.SetRGB(0, 0, 1)
 	i.ggimg.DrawRectangle(50, 30, 150, 25)
 	i.ggimg.Fill()

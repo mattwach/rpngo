@@ -100,3 +100,8 @@ func (pw *PixelPlotWindow) plotPoint(x, y float64, colidx uint8) error {
 	pw.pixw.SetPoint(wx, wy)
 	return nil
 }
+
+func (pw *PixelPlotWindow) PixelToCoord(x, y int) (float64, float64) {
+	w, h := pw.pixw.PixelSize()
+	return pw.common.pixelToCoordX(x, w), pw.common.pixelToCoordY(y, h)
+}
