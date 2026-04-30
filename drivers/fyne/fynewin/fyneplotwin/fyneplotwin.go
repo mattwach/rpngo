@@ -31,11 +31,12 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	}()
 	x, y := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	s := fmt.Sprintf("(%.4f, %.4f)", x, y)
-	i.ggimg.SetRGB(0, 0, 1)
-	i.ggimg.DrawRectangle(50, 30, 150, 25)
+	w, h := i.ggimg.MeasureString(s)
+	i.ggimg.SetRGB(0, 0, 0)
+	i.ggimg.DrawRectangle(20, 20, w+20, h)
 	i.ggimg.Fill()
 	i.ggimg.SetRGB(1, 1, 1)
-	i.ggimg.DrawString(s, 50, 50)
+	i.ggimg.DrawString(s, 20, 20+h)
 	i.image.Refresh()
 }
 
