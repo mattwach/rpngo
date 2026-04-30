@@ -72,6 +72,10 @@ func (f *Frame) IsComplex() bool {
 	return (f.ftype & CLASS_MASK) == COMPLEX_CLASS
 }
 
+func (f *Frame) IsReal() bool {
+	return ((f.ftype & CLASS_MASK) == COMPLEX_CLASS) && (imag(f.cmplx) == 0)
+}
+
 func (f *Frame) IsNumber() bool {
 	return (f.ftype & NUMBER_MASK) == NUMBER_MASK
 }

@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"math"
 	"math/cmplx"
 	"mattwach/rpngo/common/rpn"
 )
@@ -17,6 +18,15 @@ func power(r *rpn.RPN) error {
 		if err != nil {
 			return err
 		}
+
+		if af.IsReal() && bf.IsReal() {
+			// cmplx.Pow() can in some cases have unsightly rounding errors
+			// (such as -6 2 **).  Catch the case where both a and b are real
+			// numbers to avoid this common case.
+			return r.PushFrame(
+				rpn.RealFrame(math.Pow(real(af.UnsafeComplex()), real(b))))
+		}
+
 		return r.PushFrame(rpn.ComplexFrameWithType(cmplx.Pow(af.UnsafeComplex(), b), af.Type()))
 	}
 	if bf.IsComplex() {
