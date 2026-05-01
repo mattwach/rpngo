@@ -3,7 +3,6 @@ package fyneplotwin
 import (
 	"fmt"
 	"image/color"
-	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
 
@@ -33,6 +32,48 @@ type interactiveImage struct {
 	// coordinates
 	plotw float64
 	ploth float64
+}
+
+const scrollPercent = 0.25
+
+func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
+	i.inMainContext = true
+	defer func() {
+		i.inMainContext = false
+	}()
+	select {
+	case r := <-i.rpnInstance:
+		defer func() {
+			i.rpnInstance <- r
+		}()
+		plotw := float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+
+		if ev.Scrolled.DY > 0 {
+			// zoom in
+			plotw *= (1 - scrollPercent)
+			ploth *= (1 - scrollPercent)
+		} else {
+			// zoom out
+			plotw *= (1 + scrollPercent)
+			ploth *= (1 + scrollPercent)
+		}
+
+		// the goal is to increase the bounds of the plot window while keeping
+		// the point under the cursor fixed
+		xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
+		yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
+		anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
+		i.parent.Common.MinV = anchorX - xoffset
+		i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		if !i.parent.Common.AutoY {
+			i.parent.Common.MinY = anchorY - yoffset
+			i.parent.Common.MaxY = i.parent.Common.MinY + ploth
+		}
+		i.parent.Update(r, true)
+	default:
+		// no action if the rpn instance is not available
+	}
 }
 
 // MouseMoved captures continuous movement over the image
@@ -86,12 +127,10 @@ func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
 	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
 	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
-	log.Printf("MouseDown: %v, anchor: (%.4f, %.4f)", ev, i.anchorX, i.anchorY)
 }
 
 func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
 	i.mouseDown = false
-	log.Printf("MouseUp: %v", ev)
 }
 func (i *interactiveImage) MouseIn(ev *desktop.MouseEvent) {}
 func (i *interactiveImage) MouseOut()                      {}
