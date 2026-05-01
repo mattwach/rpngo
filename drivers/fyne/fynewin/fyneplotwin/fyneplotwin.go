@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
@@ -172,10 +173,11 @@ func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.
 type FynePlotWin struct {
-	win        fyne.Window
-	canvas     interactiveImage
-	color      color.RGBA
-	clearFirst bool
+	win           fyne.Window
+	canvas        interactiveImage
+	autoYCheckbox *widget.Check
+	color         color.RGBA
+	clearFirst    bool
 }
 
 // New is expected to be called in the context of the main thread.
@@ -191,9 +193,28 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.rpnInstance = r
 	pw.canvas.ggimg = gg.NewContext(int(winSize.Width), int(winSize.Height))
 	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
-	pw.win.SetContent(&pw.canvas)
 	pw.canvas.parent = parent
+	pw.autoYCheckbox = widget.NewCheck("Auto Y", pw.autoYClicked)
+	bottom := container.NewHBox(pw.autoYCheckbox)
+	pw.win.SetContent(container.NewBorder(nil, bottom, nil, nil, &pw.canvas))
 	return pw
+}
+
+func (pw *FynePlotWin) autoYClicked(on bool) {
+	pw.canvas.inMainContext = true
+	defer func() {
+		pw.canvas.inMainContext = false
+	}()
+	select {
+	case r := <-pw.canvas.rpnInstance:
+		defer func() {
+			pw.canvas.rpnInstance <- r
+		}()
+		pw.canvas.parent.Common.AutoY = on
+		pw.canvas.parent.Update(r, true)
+	default:
+		// no action if the rpn instance is not available
+	}
 }
 
 func (pw *FynePlotWin) clearIfNeeded() {
@@ -228,13 +249,14 @@ func (pw *FynePlotWin) WindowSize() (int, int) {
 
 // Refresh is expected to be called outside of the main fyne thread.
 func (pw *FynePlotWin) Refresh() {
-	if pw.canvas.inMainContext {
-		// we got here from a fyne ui call
+	fn := func() {
 		pw.canvas.image.Refresh()
+		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
+	}
+	if pw.canvas.inMainContext {
+		fn()
 	} else {
-		fyne.DoAndWait(func() {
-			pw.canvas.image.Refresh()
-		})
+		fyne.DoAndWait(fn)
 	}
 	// clear the next time drawing is started
 	pw.clearFirst = true
