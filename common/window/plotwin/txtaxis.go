@@ -46,7 +46,7 @@ const maxTxtVerticalSpacing = 10.0
 
 func (pw *TxtPlotWindow) drawVerticalTickMarks(wx int) {
 	wh := pw.txtw.TextHeight()            // height in characters
-	yr := pw.common.maxy - pw.common.miny // units
+	yr := pw.common.MaxY - pw.common.MinY // units
 	cpu := float64(wh) / yr               // characters / unit
 	var te float64 = 1                    // ticks every (0.5, 1, etc)
 	if cpu > maxTxtVerticalSpacing {
@@ -58,13 +58,13 @@ func (pw *TxtPlotWindow) drawVerticalTickMarks(wx int) {
 	// becuase te was carefully selected to provide a limited number
 	// of tick marks, we can use a simple loop to determine the min te
 	stepsBack := 0
-	for (float64(stepsBack-1) * te) > pw.common.miny {
+	for (float64(stepsBack-1) * te) > pw.common.MinY {
 		stepsBack--
 	}
 
 	for {
 		y := float64(stepsBack) * te
-		if y >= pw.common.maxy {
+		if y >= pw.common.MaxY {
 			break
 		}
 		if stepsBack != 0 {
@@ -97,7 +97,7 @@ const maxTxtHorizontalSpacing = 18.0
 
 func (pw *TxtPlotWindow) drawHorizontalTickMarks(wy int) {
 	ww := pw.txtw.TextWidth()             // width in characters
-	xr := pw.common.maxx - pw.common.minx // units
+	xr := pw.common.MaxX - pw.common.MinX // units
 	cpu := float64(ww) / xr               // characters / unit
 	var te float64 = 1                    // ticks every (0.5, 1, etc)
 	if cpu > maxTxtHorizontalSpacing {
@@ -107,13 +107,13 @@ func (pw *TxtPlotWindow) drawHorizontalTickMarks(wy int) {
 	}
 
 	stepsBack := 0
-	for (float64(stepsBack-1) * te) > pw.common.minx {
+	for (float64(stepsBack-1) * te) > pw.common.MinX {
 		stepsBack--
 	}
 
 	for {
 		x := float64(stepsBack) * te
-		if x >= pw.common.maxx {
+		if x >= pw.common.MaxX {
 			break
 		}
 		if stepsBack != 0 {

@@ -15,7 +15,7 @@ func (pw *PixelPlotWindow) drawAxis() {
 }
 
 func (pw *PixelPlotWindow) drawVerticalAxis(w, h int) {
-	x, xok := pw.common.transformX(0, w)
+	x, xok := pw.Common.transformX(0, w)
 	if xok {
 		pw.pixw.VLine(x, 0, h-1)
 		pw.drawVerticalTickMarks(x, w, h)
@@ -36,7 +36,7 @@ const horizTextOffset = 10
 const vertTextOffset = 20
 
 func (pw *PixelPlotWindow) drawVerticalTickMarks(wx, ww, wh int) {
-	yr := pw.common.maxy - pw.common.miny // units
+	yr := pw.Common.MaxY - pw.Common.MinY // units
 	cpu := float64(wh) / yr               // characters / unit
 	var te float64 = 1                    // ticks every (0.5, 1, etc)
 	if cpu > maxPixelVerticalSpacing {
@@ -48,13 +48,13 @@ func (pw *PixelPlotWindow) drawVerticalTickMarks(wx, ww, wh int) {
 	// becuase te was carefully selected to provide a limited number
 	// of tick marks, we can use a simple loop to determine the min te
 	stepsBack := 0
-	for (float64(stepsBack-1) * te) > pw.common.miny {
+	for (float64(stepsBack-1) * te) > pw.Common.MinY {
 		stepsBack--
 	}
 
 	for {
 		y := float64(stepsBack) * te
-		if y >= pw.common.maxy {
+		if y >= pw.Common.MaxY {
 			break
 		}
 		if stepsBack != 0 {
@@ -65,7 +65,7 @@ func (pw *PixelPlotWindow) drawVerticalTickMarks(wx, ww, wh int) {
 }
 
 func (pw *PixelPlotWindow) drawVerticalTick(wx, ww, wh int, y float64) {
-	wy, _ := pw.common.transformY(y, wh)
+	wy, _ := pw.Common.transformY(y, wh)
 	x0 := wx - tickLength
 	if x0 < 0 {
 		x0 = 0
@@ -84,7 +84,7 @@ func (pw *PixelPlotWindow) drawVerticalTick(wx, ww, wh int, y float64) {
 }
 
 func (pw *PixelPlotWindow) drawHorizontalAxis(w, h int) {
-	y, yok := pw.common.transformY(0, h)
+	y, yok := pw.Common.transformY(0, h)
 	if yok {
 		pw.pixw.HLine(0, y, w)
 		pw.drawHorizontalTickMarks(y, w, h)
@@ -95,7 +95,7 @@ const minPixelHorizontalSpacing = 5 * fontCharWidth
 const maxPixelHorizontalSpacing = 8 * fontCharWidth
 
 func (pw *PixelPlotWindow) drawHorizontalTickMarks(wy, ww, wh int) {
-	xr := pw.common.maxx - pw.common.minx // units
+	xr := pw.Common.MaxX - pw.Common.MinX // units
 	cpu := float64(ww) / xr               // characters / unit
 	var te float64 = 1                    // ticks every (0.5, 1, etc)
 	if cpu > maxPixelHorizontalSpacing {
@@ -105,13 +105,13 @@ func (pw *PixelPlotWindow) drawHorizontalTickMarks(wy, ww, wh int) {
 	}
 
 	stepsBack := 0
-	for (float64(stepsBack-1) * te) > pw.common.minx {
+	for (float64(stepsBack-1) * te) > pw.Common.MinX {
 		stepsBack--
 	}
 
 	for {
 		x := float64(stepsBack) * te
-		if x >= pw.common.maxx {
+		if x >= pw.Common.MaxX {
 			break
 		}
 		if stepsBack != 0 {
@@ -122,7 +122,7 @@ func (pw *PixelPlotWindow) drawHorizontalTickMarks(wy, ww, wh int) {
 }
 
 func (pw *PixelPlotWindow) drawHorizontalTick(x float64, wy, ww, wh int) {
-	wx, _ := pw.common.transformX(x, ww)
+	wx, _ := pw.Common.transformX(x, ww)
 	y0 := wy - tickLength
 	if y0 < 0 {
 		y0 = 0

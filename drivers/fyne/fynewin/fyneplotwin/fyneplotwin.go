@@ -3,6 +3,7 @@ package fyneplotwin
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
 
@@ -21,6 +22,17 @@ type interactiveImage struct {
 	image         *canvas.Image
 	parent        *plotwin.PixelPlotWindow
 	rpnInstance   chan *rpn.RPN
+
+	// mouse drag event
+	mouseDown bool
+	// when the mouse is down, the mouse cursor should be positioned at the
+	// given point
+	anchorX float64
+	anchorY float64
+	// the plotw and ploth are used to recalculate the graph min and max
+	// coordinates
+	plotw float64
+	ploth float64
 }
 
 // MouseMoved captures continuous movement over the image
@@ -29,6 +41,35 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	defer func() {
 		i.inMainContext = false
 	}()
+	if i.mouseDown {
+		i.mouseMovedWhileDown(ev)
+	} else {
+		i.mouseMovedWhileUp(ev)
+	}
+}
+
+func (i *interactiveImage) mouseMovedWhileDown(ev *desktop.MouseEvent) {
+	select {
+	case r := <-i.rpnInstance:
+		defer func() {
+			i.rpnInstance <- r
+		}()
+		// The goal is to set minx, maxv, miny, maxy so that the point
+		// under the cursor is still at anchorX, anchorY
+		xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
+		yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
+		i.parent.Common.MinV = i.anchorX - xoffset
+		i.parent.Common.MaxV = i.parent.Common.MinV + i.plotw
+		i.parent.Common.AutoY = false
+		i.parent.Common.MinY = i.anchorY - yoffset
+		i.parent.Common.MaxY = i.parent.Common.MinY + i.ploth
+		i.parent.Update(r, true)
+	default:
+		// no action if the rpn instance is not available
+	}
+}
+
+func (i *interactiveImage) mouseMovedWhileUp(ev *desktop.MouseEvent) {
 	x, y := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	s := fmt.Sprintf("(%.4f, %.4f)", x, y)
 	w, h := i.ggimg.MeasureString(s)
@@ -40,6 +81,18 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	i.image.Refresh()
 }
 
+func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
+	i.mouseDown = true
+	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
+	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+	log.Printf("MouseDown: %v, anchor: (%.4f, %.4f)", ev, i.anchorX, i.anchorY)
+}
+
+func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
+	i.mouseDown = false
+	log.Printf("MouseUp: %v", ev)
+}
 func (i *interactiveImage) MouseIn(ev *desktop.MouseEvent) {}
 func (i *interactiveImage) MouseOut()                      {}
 
