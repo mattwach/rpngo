@@ -1,7 +1,6 @@
 package fyneplotwin
 
 import (
-	"fmt"
 	"image/color"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
@@ -9,164 +8,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/fogleman/gg"
 )
-
-type interactiveImage struct {
-	widget.BaseWidget
-	inMainContext bool
-	ggimg         *gg.Context
-	image         *canvas.Image
-	parent        *plotwin.PixelPlotWindow
-	rpnInstance   chan *rpn.RPN
-
-	// mouse drag event
-	mouseDown bool
-	// when the mouse is down, the mouse cursor should be positioned at the
-	// given point
-	anchorX float64
-	anchorY float64
-	// the plotw and ploth are used to recalculate the graph min and max
-	// coordinates
-	plotw float64
-	ploth float64
-}
-
-const scrollPercent = 0.25
-
-func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		plotw := float64(i.parent.Common.MaxV - i.parent.Common.MinV)
-		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
-
-		if ev.Scrolled.DY > 0 {
-			// zoom in
-			plotw *= (1 - scrollPercent)
-			ploth *= (1 - scrollPercent)
-		} else {
-			// zoom out
-			plotw *= (1 + scrollPercent)
-			ploth *= (1 + scrollPercent)
-		}
-
-		// the goal is to increase the bounds of the plot window while keeping
-		// the point under the cursor fixed
-		xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
-		yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
-		anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-		i.parent.Common.MinV = anchorX - xoffset
-		i.parent.Common.MaxV = i.parent.Common.MinV + plotw
-		if !i.parent.Common.AutoY {
-			i.parent.Common.MinY = anchorY - yoffset
-			i.parent.Common.MaxY = i.parent.Common.MinY + ploth
-		}
-		i.parent.Update(r, true)
-	default:
-		// no action if the rpn instance is not available
-	}
-}
-
-// MouseMoved captures continuous movement over the image
-func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	if i.mouseDown {
-		i.mouseMovedWhileDown(ev)
-	} else {
-		i.mouseMovedWhileUp(ev)
-	}
-}
-
-func (i *interactiveImage) mouseMovedWhileDown(ev *desktop.MouseEvent) {
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		// The goal is to set minx, maxv, miny, maxy so that the point
-		// under the cursor is still at anchorX, anchorY
-		xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
-		yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
-		i.parent.Common.MinV = i.anchorX - xoffset
-		i.parent.Common.MaxV = i.parent.Common.MinV + i.plotw
-		i.parent.Common.AutoY = false
-		i.parent.Common.MinY = i.anchorY - yoffset
-		i.parent.Common.MaxY = i.parent.Common.MinY + i.ploth
-		i.parent.Update(r, true)
-	default:
-		// no action if the rpn instance is not available
-	}
-}
-
-func (i *interactiveImage) mouseMovedWhileUp(ev *desktop.MouseEvent) {
-	x, y := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-	s := fmt.Sprintf("(%.4f, %.4f)", x, y)
-	w, h := i.ggimg.MeasureString(s)
-	i.ggimg.SetRGB(0, 0, 0)
-	i.ggimg.DrawRectangle(20, 20, w+20, h)
-	i.ggimg.Fill()
-	i.ggimg.SetRGB(1, 1, 1)
-	i.ggimg.DrawString(s, 20, 20+h)
-	i.image.Refresh()
-}
-
-func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
-	i.mouseDown = true
-	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
-	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
-}
-
-func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
-	i.mouseDown = false
-}
-func (i *interactiveImage) MouseIn(ev *desktop.MouseEvent) {}
-func (i *interactiveImage) MouseOut()                      {}
-
-func (i *interactiveImage) Resize(size fyne.Size) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	i.BaseWidget.Resize(size)
-	if i.parent == nil {
-		return
-	}
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		i.ggimg = gg.NewContext(int(size.Width), int(size.Height))
-		i.image.Image = i.ggimg.Image()
-		i.image.Resize(size)
-		i.parent.ResizeWindow(0, 0, int(size.Width), int(size.Height))
-		i.parent.Update(r, false)
-	default:
-		// no action if the rpn instance is not available
-	}
-}
-
-func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	return widget.NewSimpleRenderer(i.image)
-}
 
 // FynePlotWin holds the context for a stack window.
 // Important, RPN is owned by the readline goroutine thus should be accessed
@@ -200,6 +45,90 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	return pw
 }
 
+// Color implements the window/PixelWindow interface.
+func (pw *FynePlotWin) Color(c color.RGBA) {
+	pw.color = c
+	pw.canvas.ggimg.SetColor(c)
+}
+
+// FilledRect implements the window/PixelWindow interface.
+func (pw *FynePlotWin) FilledRect(x, y, w, h int) {
+	pw.clearIfNeeded()
+	pw.canvas.ggimg.DrawRectangle(float64(x), float64(y), float64(w), float64(h))
+	pw.canvas.ggimg.Fill()
+}
+
+// HLine implements the window/PixelWindow interface.
+func (pw *FynePlotWin) HLine(x, y, w int) {
+	pw.clearIfNeeded()
+	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x+w), float64(y))
+	pw.canvas.ggimg.Stroke()
+}
+
+// PixelSize implements the window/PixelWindow interface.
+func (pw *FynePlotWin) PixelSize() (int, int) {
+	return pw.WindowSize()
+}
+
+// Refresh implements the window/PixelWindow interface.
+// It can be called from the fyne or readline gorroutine, with
+// pw.canvas.inMainContext indicating which one.
+func (pw *FynePlotWin) Refresh() {
+	fn := func() {
+		pw.canvas.image.Refresh()
+		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
+	}
+	if pw.canvas.inMainContext {
+		fn()
+	} else {
+		fyne.DoAndWait(fn)
+	}
+	// clear the next time drawing is started
+	pw.clearFirst = true
+}
+
+// ResizeWindow implements the window/WindowBase interface.
+func (pw *FynePlotWin) ResizeWindow(x, y, w, h int) error {
+	// not supported in fyne
+	return nil
+}
+
+// SetPoint implements the window/PixelWindow interface.
+func (pw *FynePlotWin) SetPoint(x, y int) {
+	pw.clearIfNeeded()
+	pw.canvas.ggimg.SetPixel(x, y)
+}
+
+// ShowBorder implements the window/WindowBase interface.  It is ignored by
+// the fyne implementation.
+func (pw *FynePlotWin) ShowBorder(sw, sh int) error {
+	return nil
+}
+
+// Text implements the window/PixelWindow interface.
+func (pw *FynePlotWin) Text(s string, x, y int) {
+	pw.clearIfNeeded()
+	pw.canvas.ggimg.DrawString(s, float64(x), float64(y))
+}
+
+// VLine implements the window/PixelWindow interface.
+func (pw *FynePlotWin) VLine(x, y, h int) {
+	pw.clearIfNeeded()
+	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x), float64(y+h))
+	pw.canvas.ggimg.Stroke()
+}
+
+// WindowXY implements the window/WindowBase interface.
+func (pw *FynePlotWin) WindowXY() (int, int) {
+	return 0, 0
+}
+
+// WindowSize implements the window/WindowBase interface.
+func (pw *FynePlotWin) WindowSize() (int, int) {
+	return pw.canvas.ggimg.Width(), pw.canvas.ggimg.Height()
+}
+
+// autoYClicked is called when the autoY checkbox is toggled.
 func (pw *FynePlotWin) autoYClicked(on bool) {
 	pw.canvas.inMainContext = true
 	defer func() {
@@ -217,6 +146,8 @@ func (pw *FynePlotWin) autoYClicked(on bool) {
 	}
 }
 
+// clearIfNeeded clears the canvas if clearFirst is true. It is used as a
+// workaround where we want to clear the canvas after a refresh.
 func (pw *FynePlotWin) clearIfNeeded() {
 	if !pw.clearFirst {
 		return
@@ -225,76 +156,4 @@ func (pw *FynePlotWin) clearIfNeeded() {
 	pw.canvas.ggimg.Clear()
 	pw.canvas.ggimg.SetColor(pw.color)
 	pw.clearFirst = false
-}
-
-// We conform to the window/PixelWindow Interface so that common logic can
-// update the plot
-func (pw *FynePlotWin) ResizeWindow(x, y, w, h int) error {
-	// not supported in fyne
-	return nil
-}
-
-func (pw *FynePlotWin) ShowBorder(sw, sh int) error {
-	// not supported in fyne
-	return nil
-}
-
-func (pw *FynePlotWin) WindowXY() (int, int) {
-	return 0, 0
-}
-
-func (pw *FynePlotWin) WindowSize() (int, int) {
-	return pw.canvas.ggimg.Width(), pw.canvas.ggimg.Height()
-}
-
-// Refresh is expected to be called outside of the main fyne thread.
-func (pw *FynePlotWin) Refresh() {
-	fn := func() {
-		pw.canvas.image.Refresh()
-		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
-	}
-	if pw.canvas.inMainContext {
-		fn()
-	} else {
-		fyne.DoAndWait(fn)
-	}
-	// clear the next time drawing is started
-	pw.clearFirst = true
-}
-
-func (pw *FynePlotWin) PixelSize() (int, int) {
-	return pw.WindowSize()
-}
-
-func (pw *FynePlotWin) Color(c color.RGBA) {
-	pw.color = c
-	pw.canvas.ggimg.SetColor(c)
-}
-
-func (pw *FynePlotWin) SetPoint(x, y int) {
-	pw.clearIfNeeded()
-	pw.canvas.ggimg.SetPixel(x, y)
-}
-
-func (pw *FynePlotWin) HLine(x, y, w int) {
-	pw.clearIfNeeded()
-	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x+w), float64(y))
-	pw.canvas.ggimg.Stroke()
-}
-
-func (pw *FynePlotWin) VLine(x, y, h int) {
-	pw.clearIfNeeded()
-	pw.canvas.ggimg.DrawLine(float64(x), float64(y), float64(x), float64(y+h))
-	pw.canvas.ggimg.Stroke()
-}
-
-func (pw *FynePlotWin) FilledRect(x, y, w, h int) {
-	pw.clearIfNeeded()
-	pw.canvas.ggimg.DrawRectangle(float64(x), float64(y), float64(w), float64(h))
-	pw.canvas.ggimg.Fill()
-}
-
-func (pw *FynePlotWin) Text(s string, x, y int) {
-	pw.clearIfNeeded()
-	pw.canvas.ggimg.DrawString(s, float64(x), float64(y))
 }
