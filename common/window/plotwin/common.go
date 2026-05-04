@@ -3,6 +3,7 @@ package plotwin
 import (
 	"errors"
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/elog"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
@@ -145,6 +146,18 @@ func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
 		}
 		if pw.AutoY {
 			pw.adjustAutoY()
+		}
+	} else {
+		// emergency corrections to avoid hanging in other parts of the code.
+		// This will only happen if other parts of the code fail to
+		// keep these values proper.
+		if pw.MinX >= pw.MaxX {
+			log.Printf("warning: MinX >= MaxX (%f >= %f), adjusting to avoid math issues", pw.MinX, pw.MaxX)
+			pw.MaxX = pw.MinX + 1.0
+		}
+		if pw.MinY >= pw.MaxY {
+			log.Printf("warning: MinY >= MaxY (%f >= %f), adjusting to avoid math issues", pw.MinY, pw.MaxY)
+			pw.MaxY = pw.MinY + 1.0
 		}
 	}
 }
