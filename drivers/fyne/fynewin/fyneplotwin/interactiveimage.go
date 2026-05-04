@@ -31,7 +31,7 @@ type interactiveImage struct {
 	rpnInstance chan *rpn.RPN
 
 	// mouse drag event
-	mouseDown bool
+	mouseDown desktop.MouseButton
 	// when the mouse is down, the mouse cursor should be positioned at the
 	// given point
 	anchorX float64
@@ -54,7 +54,7 @@ func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
 // MouseDown captures the initial point of a mouse drag event, which is used to
 // anchor the position of the graph during panning.
 func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
-	i.mouseDown = true
+	i.mouseDown = ev.Button
 	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
 	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
@@ -73,9 +73,10 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	defer func() {
 		i.inMainContext = false
 	}()
-	if i.mouseDown {
+	switch i.mouseDown {
+	case desktop.MouseButtonPrimary:
 		i.plotDragged(ev)
-	} else {
+	default:
 		i.drawPointerCoordinates(ev)
 	}
 }
@@ -86,7 +87,7 @@ func (i *interactiveImage) MouseOut() {}
 
 // MouseUp captures the end of a mouse drag event.
 func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
-	i.mouseDown = false
+	i.mouseDown = 0
 }
 
 // Resize satisfies the fyne.Widget interface and is called when the widget is
