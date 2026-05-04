@@ -92,7 +92,7 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 		if err != nil {
 			return err
 		}
-		pw.steps = uint32(v)
+		pw.Steps = uint32(v)
 		return nil
 	case "numplots":
 		v, err := val.Int()
@@ -158,7 +158,7 @@ func (pw *plotWindowCommon) getProp(name string) (rpn.Frame, error) {
 	case "numplots":
 		return rpn.IntFrame(int64(len(pw.plots)), rpn.INTEGER_FRAME), nil
 	case "steps":
-		return rpn.IntFrame(int64(pw.steps), rpn.INTEGER_FRAME), nil
+		return rpn.IntFrame(int64(pw.Steps), rpn.INTEGER_FRAME), nil
 	}
 
 	if strings.HasPrefix(name, "color") && (len(name) > 5) {

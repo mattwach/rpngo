@@ -1,6 +1,7 @@
 package fyneplotwin
 
 import (
+	"fmt"
 	"image/color"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
@@ -22,8 +23,33 @@ type FynePlotWin struct {
 	canvas        interactiveImage
 	autoXCheckbox *widget.Check
 	autoYCheckbox *widget.Check
+	xMin          *customEntry
+	xMax          *customEntry
+	yMin          *customEntry
+	yMax          *customEntry
+	steps         *customEntry
 	color         color.RGBA
 	clearFirst    bool
+}
+
+type customEntry struct {
+	widget.Entry
+}
+
+const minEntryWidth = 80
+
+func (e *customEntry) MinSize() fyne.Size {
+	ms := e.Entry.MinSize() // Get default minimum size
+	if ms.Width < minEntryWidth {
+		ms.Width = minEntryWidth // Set minimum width if it's less than the specified minimum
+	}
+	return ms
+}
+
+func newCustomEntry() *customEntry {
+	e := &customEntry{}
+	e.ExtendBaseWidget(e)
+	return e
 }
 
 // New is expected to be called in the context of the main thread.
@@ -42,8 +68,29 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.parent = parent
 	pw.autoXCheckbox = widget.NewCheck("Auto X", pw.autoXClicked)
 	pw.autoYCheckbox = widget.NewCheck("Auto Y", pw.autoYClicked)
-	label := widget.NewLabel("Left mouse to pan, middle mouse to zoom")
-	bottom := container.NewHBox(pw.autoXCheckbox, pw.autoYCheckbox, label)
+	xMinLabel := widget.NewLabel("Xmin")
+	pw.xMin = newCustomEntry()
+	xMaxLabel := widget.NewLabel("Xmax")
+	pw.xMax = newCustomEntry()
+	yMinLabel := widget.NewLabel("Ymin")
+	pw.yMin = newCustomEntry()
+	yMaxLabel := widget.NewLabel("Ymax")
+	pw.yMax = newCustomEntry()
+	stepsLabel := widget.NewLabel("Steps")
+	pw.steps = newCustomEntry()
+	bottom := container.NewHBox(
+		pw.autoXCheckbox,
+		pw.autoYCheckbox,
+		xMinLabel,
+		pw.xMin,
+		xMaxLabel,
+		pw.xMax,
+		yMinLabel,
+		pw.yMin,
+		yMaxLabel,
+		pw.yMax,
+		stepsLabel,
+		pw.steps)
 	pw.win.SetContent(container.NewBorder(nil, bottom, nil, nil, &pw.canvas))
 	return pw
 }
@@ -81,6 +128,11 @@ func (pw *FynePlotWin) Refresh() {
 		pw.canvas.image.Refresh()
 		pw.autoXCheckbox.SetChecked(pw.canvas.parent.Common.AutoX)
 		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
+		pw.xMin.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MinX))
+		pw.xMax.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MaxX))
+		pw.yMin.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MinY))
+		pw.yMax.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MaxY))
+		pw.steps.SetText(fmt.Sprintf("%d", pw.canvas.parent.Common.Steps))
 	}
 	if pw.canvas.inMainContext {
 		fn()

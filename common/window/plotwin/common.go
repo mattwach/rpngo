@@ -66,7 +66,7 @@ type plotWindowCommon struct {
 	AutoY     bool
 	MinV      float64
 	MaxV      float64
-	steps     uint32
+	Steps     uint32
 	plots     []Plot
 	stats     PointStats
 }
@@ -76,7 +76,7 @@ func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
 	pw.AutoY = true
 	pw.MinV = -1
 	pw.MaxV = 1
-	pw.steps = steps
+	pw.Steps = steps
 	pw.numColors = numColors
 }
 
@@ -146,7 +146,7 @@ func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
 	if pw.AutoX || pw.AutoY {
 		pw.stats.reset()
 		for _, plot := range pw.plots {
-			if err := pw.addPoints(r, plot, pw.steps, pw.stats.update); err != nil {
+			if err := pw.addPoints(r, plot, pw.Steps, pw.stats.update); err != nil {
 				// this plot has some type of error, but there is nothing to be done
 				// here outside of not contributing any more points from this point
 				// to the stats
@@ -164,7 +164,7 @@ func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
 func (pw *plotWindowCommon) createPoints(r *rpn.RPN, fn func(x, y float64, coloridx uint8) error) error {
 	var finalErr error
 	for i, plot := range pw.plots {
-		if err := pw.addPoints(r, plot, pw.steps, fn); err != nil {
+		if err := pw.addPoints(r, plot, pw.Steps, fn); err != nil {
 			r.Print("error plotting {")
 			r.Print(strings.Join(plot.fn, " "))
 			r.Print("}: ")
