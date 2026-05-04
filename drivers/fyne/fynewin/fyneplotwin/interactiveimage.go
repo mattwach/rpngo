@@ -32,10 +32,16 @@ type interactiveImage struct {
 
 	// mouse drag event
 	mouseDown desktop.MouseButton
-	// when the mouse is down, the mouse cursor should be positioned at the
-	// given point
+	// when the mouse left button is down, the mouse cursor should be positioned
+	// at the given point
 	anchorX float64
 	anchorY float64
+	// for middle button magnify, we also care about tracking the mouse
+	// position in terms of the graph window so that a x/y magnify scale
+	// can be stabily calculated.  There may be a way to do the math without
+	// this, but it is easier to understand with it.
+	posx float32
+	posy float32
 	// the plotw and ploth are used to recalculate the graph min and max
 	// coordinates
 	plotw float64
@@ -55,6 +61,8 @@ func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
 // anchor the position of the graph during panning.
 func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
 	i.mouseDown = ev.Button
+	i.posx = ev.Position.X
+	i.posy = ev.Position.Y
 	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
 	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
@@ -76,6 +84,8 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 	switch i.mouseDown {
 	case desktop.MouseButtonPrimary:
 		i.plotDragged(ev)
+	case desktop.MouseButtonTertiary:
+		i.magnify(ev)
 	default:
 		i.drawPointerCoordinates(ev)
 	}
@@ -180,6 +190,44 @@ func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
 		i.parent.Common.MinY = i.anchorY - yoffset
 		i.parent.Common.MaxY = i.parent.Common.MinY + i.ploth
 		i.parent.Update(r, true)
+	default:
+		// no action if the rpn instance is not available
+	}
+}
+
+const magnifyFactor = 1.5
+
+func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
+	i.inMainContext = true
+	defer func() {
+		i.inMainContext = false
+	}()
+	select {
+	case r := <-i.rpnInstance:
+		defer func() {
+			i.rpnInstance <- r
+		}()
+		plotw := float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+
+		xscale := (ev.Position.X - i.posx) / float32(i.ggimg.Width()) * magnifyFactor
+		plotw *= (1 - float64(xscale))
+
+		yscale := (ev.Position.Y - i.posy) / float32(i.ggimg.Height()) * magnifyFactor
+		ploth *= (1 + float64(yscale))
+
+		// the goal is to increase the bounds of the plot window while keeping
+		// the point under the cursor fixed
+		xoffset := plotw * float64(i.posx) / float64(i.ggimg.Width())
+		yoffset := ploth * (float64(i.ggimg.Height()) - float64(i.posy)) / float64(i.ggimg.Height())
+		i.parent.Common.MinV = i.anchorX - xoffset
+		i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		i.parent.Common.AutoY = false
+		i.parent.Common.MinY = i.anchorY - yoffset
+		i.parent.Common.MaxY = i.parent.Common.MinY + ploth
+		i.parent.Update(r, true)
+		i.posx = ev.Position.X
+		i.posy = ev.Position.Y
 	default:
 		// no action if the rpn instance is not available
 	}
