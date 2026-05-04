@@ -74,9 +74,9 @@ func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
 		i.inMainContext = false
 	}()
 	if i.mouseDown {
-		i.mouseMovedWhileDown(ev)
+		i.plotDragged(ev)
 	} else {
-		i.mouseMovedWhileUp(ev)
+		i.drawPointerCoordinates(ev)
 	}
 }
 
@@ -160,10 +160,10 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 	}
 }
 
-// mouseMovedWhileDown handles mouse movement events that occur while the mouse
+// plotDragged handles mouse movement events that occur while the mouse
 // is down, which are treated as part of a drag event. It pans the graph so that
 // the point under the cursor remains fixed at the anchor point.
-func (i *interactiveImage) mouseMovedWhileDown(ev *desktop.MouseEvent) {
+func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
 	select {
 	case r := <-i.rpnInstance:
 		defer func() {
@@ -184,10 +184,10 @@ func (i *interactiveImage) mouseMovedWhileDown(ev *desktop.MouseEvent) {
 	}
 }
 
-// mouseMovedWhileUp handles mouse movement events that occur while the mouse
+// drawPointerCoordinates handles mouse movement events that occur while the mouse
 // is up, which are treated as hover events. It displays the coordinates under
 // the cursor.
-func (i *interactiveImage) mouseMovedWhileUp(ev *desktop.MouseEvent) {
+func (i *interactiveImage) drawPointerCoordinates(ev *desktop.MouseEvent) {
 	x, y := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
 	s := fmt.Sprintf("(%.4f, %.4f)", x, y)
 	w, h := i.ggimg.MeasureString(s)
