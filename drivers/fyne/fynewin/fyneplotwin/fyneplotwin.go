@@ -42,7 +42,8 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.parent = parent
 	pw.autoXCheckbox = widget.NewCheck("Auto X", pw.autoXClicked)
 	pw.autoYCheckbox = widget.NewCheck("Auto Y", pw.autoYClicked)
-	bottom := container.NewHBox(pw.autoXCheckbox, pw.autoYCheckbox)
+	label := widget.NewLabel("Left mouse to pan, middle mouse to zoom")
+	bottom := container.NewHBox(pw.autoXCheckbox, pw.autoYCheckbox, label)
 	pw.win.SetContent(container.NewBorder(nil, bottom, nil, nil, &pw.canvas))
 	return pw
 }
