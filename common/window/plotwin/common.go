@@ -79,6 +79,15 @@ func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
 	pw.numColors = numColors
 }
 
+func (pw *plotWindowCommon) HasAParametricPlot() bool {
+	for _, plot := range pw.plots {
+		if plot.isParametric {
+			return true
+		}
+	}
+	return false
+}
+
 func (pw *plotWindowCommon) nextColor(numColors uint8) {
 	pw.coloridx++
 	if pw.coloridx >= numColors {

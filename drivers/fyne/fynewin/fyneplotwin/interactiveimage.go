@@ -64,7 +64,7 @@ func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
 	i.posx = ev.Position.X
 	i.posy = ev.Position.Y
 	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-	i.plotw = float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+	i.plotw = float64(i.parent.Common.MaxX - i.parent.Common.MinX)
 	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
 }
 
@@ -141,7 +141,7 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 		defer func() {
 			i.rpnInstance <- r
 		}()
-		plotw := float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+		plotw := float64(i.parent.Common.MaxX - i.parent.Common.MinX)
 		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
 
 		if ev.Scrolled.DY > 0 {
@@ -159,8 +159,13 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 		xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
 		yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
 		anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-		i.parent.Common.MinV = anchorX - xoffset
-		i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		if i.isAutoX() {
+			i.parent.Common.MinV = anchorX - xoffset
+			i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		} else {
+			i.parent.Common.MinX = anchorX - xoffset
+			i.parent.Common.MaxX = i.parent.Common.MinX + plotw
+		}
 		if !i.parent.Common.AutoY {
 			i.parent.Common.MinY = anchorY - yoffset
 			i.parent.Common.MaxY = i.parent.Common.MinY + ploth
@@ -184,8 +189,13 @@ func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
 		// under the cursor is still at anchorX, anchorY
 		xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
 		yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
-		i.parent.Common.MinV = i.anchorX - xoffset
-		i.parent.Common.MaxV = i.parent.Common.MinV + i.plotw
+		if i.isAutoX() {
+			i.parent.Common.MinV = i.anchorX - xoffset
+			i.parent.Common.MaxV = i.parent.Common.MinV + i.plotw
+		} else {
+			i.parent.Common.MinX = i.anchorX - xoffset
+			i.parent.Common.MaxX = i.parent.Common.MinX + i.plotw
+		}
 		i.parent.Common.AutoY = false
 		i.parent.Common.MinY = i.anchorY - yoffset
 		i.parent.Common.MaxY = i.parent.Common.MinY + i.ploth
@@ -207,7 +217,7 @@ func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
 		defer func() {
 			i.rpnInstance <- r
 		}()
-		plotw := float64(i.parent.Common.MaxV - i.parent.Common.MinV)
+		plotw := float64(i.parent.Common.MaxX - i.parent.Common.MinX)
 		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
 
 		xscale := (ev.Position.X - i.posx) / float32(i.ggimg.Width()) * magnifyFactor
@@ -220,8 +230,13 @@ func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
 		// the point under the cursor fixed
 		xoffset := plotw * float64(i.posx) / float64(i.ggimg.Width())
 		yoffset := ploth * (float64(i.ggimg.Height()) - float64(i.posy)) / float64(i.ggimg.Height())
-		i.parent.Common.MinV = i.anchorX - xoffset
-		i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		if i.isAutoX() {
+			i.parent.Common.MinV = i.anchorX - xoffset
+			i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+		} else {
+			i.parent.Common.MinX = i.anchorX - xoffset
+			i.parent.Common.MaxX = i.parent.Common.MinX + plotw
+		}
 		i.parent.Common.AutoY = false
 		i.parent.Common.MinY = i.anchorY - yoffset
 		i.parent.Common.MaxY = i.parent.Common.MinY + ploth
@@ -246,4 +261,16 @@ func (i *interactiveImage) drawPointerCoordinates(ev *desktop.MouseEvent) {
 	i.ggimg.SetRGB(1, 1, 1)
 	i.ggimg.DrawString(s, 20, 20+h)
 	i.image.Refresh()
+}
+
+// Returns true if the plot should be usnig auto x mode
+func (i *interactiveImage) isAutoX() bool {
+	if !i.parent.Common.AutoX {
+		return false
+	}
+	if i.parent.Common.HasAParametricPlot() {
+		i.parent.Common.AutoX = false
+		return false
+	}
+	return true
 }
