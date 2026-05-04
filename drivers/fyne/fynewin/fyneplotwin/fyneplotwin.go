@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -46,9 +47,10 @@ func (e *customEntry) MinSize() fyne.Size {
 	return ms
 }
 
-func newCustomEntry() *customEntry {
+func newCustomEntry(onSubmitted func(string)) *customEntry {
 	e := &customEntry{}
 	e.ExtendBaseWidget(e)
+	e.OnSubmitted = onSubmitted
 	return e
 }
 
@@ -66,18 +68,26 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.ggimg = gg.NewContext(int(winSize.Width), int(winSize.Height))
 	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
 	pw.canvas.parent = parent
-	pw.autoXCheckbox = widget.NewCheck("Auto X", pw.autoXClicked)
-	pw.autoYCheckbox = widget.NewCheck("Auto Y", pw.autoYClicked)
+	pw.autoXCheckbox = widget.NewCheck("Auto X", func(b bool) {
+		pw.uiAction(func() {
+			pw.canvas.parent.Common.AutoX = b
+		})
+	})
+	pw.autoYCheckbox = widget.NewCheck("Auto Y", func(b bool) {
+		pw.uiAction(func() {
+			pw.canvas.parent.Common.AutoY = b
+		})
+	})
 	xMinLabel := widget.NewLabel("Xmin")
-	pw.xMin = newCustomEntry()
+	pw.xMin = newCustomEntry(pw.updateXMinEntry)
 	xMaxLabel := widget.NewLabel("Xmax")
-	pw.xMax = newCustomEntry()
+	pw.xMax = newCustomEntry(pw.updateXMaxEntry)
 	yMinLabel := widget.NewLabel("Ymin")
-	pw.yMin = newCustomEntry()
+	pw.yMin = newCustomEntry(pw.updateYMinEntry)
 	yMaxLabel := widget.NewLabel("Ymax")
-	pw.yMax = newCustomEntry()
+	pw.yMax = newCustomEntry(pw.updateYMaxEntry)
 	stepsLabel := widget.NewLabel("Steps")
-	pw.steps = newCustomEntry()
+	pw.steps = newCustomEntry(pw.updateStepsEntry)
 	bottom := container.NewHBox(
 		pw.autoXCheckbox,
 		pw.autoYCheckbox,
@@ -184,8 +194,8 @@ func (pw *FynePlotWin) WindowSize() (int, int) {
 	return pw.canvas.ggimg.Width(), pw.canvas.ggimg.Height()
 }
 
-// autoYClicked is called when the autoY checkbox is toggled.
-func (pw *FynePlotWin) autoYClicked(on bool) {
+// call a UI action in the main context and updates the plot window
+func (pw *FynePlotWin) uiAction(fn func()) {
 	pw.canvas.inMainContext = true
 	defer func() {
 		pw.canvas.inMainContext = false
@@ -195,29 +205,63 @@ func (pw *FynePlotWin) autoYClicked(on bool) {
 		defer func() {
 			pw.canvas.rpnInstance <- r
 		}()
-		pw.canvas.parent.Common.AutoY = on
+		fn()
 		pw.canvas.parent.Update(r, true)
 	default:
 		// no action if the rpn instance is not available
 	}
 }
 
-// autoYClicked is called when the autoX checkbox is toggled.
-func (pw *FynePlotWin) autoXClicked(on bool) {
-	pw.canvas.inMainContext = true
-	defer func() {
-		pw.canvas.inMainContext = false
-	}()
-	select {
-	case r := <-pw.canvas.rpnInstance:
-		defer func() {
-			pw.canvas.rpnInstance <- r
-		}()
-		pw.canvas.parent.Common.AutoX = on
-		pw.canvas.parent.Update(r, true)
-	default:
-		// no action if the rpn instance is not available
+// parses and updates a float entry, then updates the plot window
+func (pw *FynePlotWin) updateXMinEntry(s string) {
+	val, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		if pw.canvas.isAutoX() {
+			pw.canvas.parent.Common.MinV = val
+		} else {
+			pw.canvas.parent.Common.MinX = val
+		}
 	}
+	pw.uiAction(func() {})
+}
+
+func (pw *FynePlotWin) updateXMaxEntry(s string) {
+	val, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		if pw.canvas.isAutoX() {
+			pw.canvas.parent.Common.MaxV = val
+		} else {
+			pw.canvas.parent.Common.MaxX = val
+		}
+	}
+	pw.uiAction(func() {})
+}
+
+func (pw *FynePlotWin) updateYMinEntry(s string) {
+	val, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		pw.canvas.parent.Common.AutoY = false
+		pw.canvas.parent.Common.MinY = val
+	}
+	pw.uiAction(func() {})
+}
+
+func (pw *FynePlotWin) updateYMaxEntry(s string) {
+	val, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		pw.canvas.parent.Common.AutoY = false
+		pw.canvas.parent.Common.MaxY = val
+	}
+	pw.uiAction(func() {})
+}
+
+// parses and updates the steps entry, then updates the plot window
+func (pw *FynePlotWin) updateStepsEntry(s string) {
+	val, err := strconv.ParseInt(s, 10, 32)
+	if (err == nil) && val > 0 {
+		pw.canvas.parent.Common.Steps = uint32(val)
+	}
+	pw.uiAction(func() {})
 }
 
 // clearIfNeeded clears the canvas if clearFirst is true. It is used as a
