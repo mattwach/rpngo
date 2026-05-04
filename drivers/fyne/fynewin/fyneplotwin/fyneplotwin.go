@@ -20,6 +20,7 @@ import (
 type FynePlotWin struct {
 	win           fyne.Window
 	canvas        interactiveImage
+	autoXCheckbox *widget.Check
 	autoYCheckbox *widget.Check
 	color         color.RGBA
 	clearFirst    bool
@@ -39,8 +40,9 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.ggimg = gg.NewContext(int(winSize.Width), int(winSize.Height))
 	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
 	pw.canvas.parent = parent
+	pw.autoXCheckbox = widget.NewCheck("Auto X", pw.autoXClicked)
 	pw.autoYCheckbox = widget.NewCheck("Auto Y", pw.autoYClicked)
-	bottom := container.NewHBox(pw.autoYCheckbox)
+	bottom := container.NewHBox(pw.autoXCheckbox, pw.autoYCheckbox)
 	pw.win.SetContent(container.NewBorder(nil, bottom, nil, nil, &pw.canvas))
 	return pw
 }
@@ -76,6 +78,7 @@ func (pw *FynePlotWin) PixelSize() (int, int) {
 func (pw *FynePlotWin) Refresh() {
 	fn := func() {
 		pw.canvas.image.Refresh()
+		pw.autoXCheckbox.SetChecked(pw.canvas.parent.Common.AutoX)
 		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
 	}
 	if pw.canvas.inMainContext {
@@ -140,6 +143,24 @@ func (pw *FynePlotWin) autoYClicked(on bool) {
 			pw.canvas.rpnInstance <- r
 		}()
 		pw.canvas.parent.Common.AutoY = on
+		pw.canvas.parent.Update(r, true)
+	default:
+		// no action if the rpn instance is not available
+	}
+}
+
+// autoYClicked is called when the autoX checkbox is toggled.
+func (pw *FynePlotWin) autoXClicked(on bool) {
+	pw.canvas.inMainContext = true
+	defer func() {
+		pw.canvas.inMainContext = false
+	}()
+	select {
+	case r := <-pw.canvas.rpnInstance:
+		defer func() {
+			pw.canvas.rpnInstance <- r
+		}()
+		pw.canvas.parent.Common.AutoX = on
 		pw.canvas.parent.Update(r, true)
 	default:
 		// no action if the rpn instance is not available
