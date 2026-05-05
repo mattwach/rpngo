@@ -25,26 +25,7 @@ func (tc *TabComplete) Clear() {
 }
 
 func (tc *TabComplete) FindNewWord(r *rpn.RPN, word string) string {
-	var wordList []string
-	var varPrefix string
-	switch word[0] {
-	case '$':
-		varPrefix = "$"
-		word = word[1:]
-		wordList = tc.allVariableNames(r)
-	case '@':
-		varPrefix = "@"
-		word = word[1:]
-		wordList = tc.allStringVariables(r)
-	case '\'', '{', '"':
-		varPrefix = word[:1]
-		word = word[1:]
-		wordList = tc.allStringVariables(r)
-		tc.getFileList()
-		wordList = tc.fileList
-	default:
-		wordList = r.AllFunctionNames()
-	}
+	varPrefix, word, wordList := tc.getWordList(r, word)
 
 	// Look for an exact match of the word
 	var newWord string
@@ -66,6 +47,47 @@ func (tc *TabComplete) FindNewWord(r *rpn.RPN, word string) string {
 	}
 
 	return varPrefix + newWord
+}
+
+func (tc *TabComplete) FindAllWords(r *rpn.RPN, word string) []string {
+	varPrefix, word, wordList := tc.getWordList(r, word)
+
+	// Look for an exact match of the word
+	var newWord []string
+	for wordIdx := 0; wordIdx < len(wordList); wordIdx++ {
+		if strings.HasPrefix(wordList[wordIdx], word) {
+			newWord = append(newWord, varPrefix+wordList[wordIdx])
+		}
+	}
+
+	return newWord
+}
+
+func (tc *TabComplete) getWordList(r *rpn.RPN, word string) (string, string, []string) {
+	if len(word) == 0 {
+		return "", word, r.AllFunctionNames()
+	}
+	var wordList []string
+	var varPrefix string
+	switch word[0] {
+	case '$':
+		varPrefix = "$"
+		word = word[1:]
+		wordList = tc.allVariableNames(r)
+	case '@':
+		varPrefix = "@"
+		word = word[1:]
+		wordList = tc.allStringVariables(r)
+	case '\'', '{', '"':
+		varPrefix = word[:1]
+		word = word[1:]
+		wordList = tc.allStringVariables(r)
+		tc.getFileList()
+		wordList = tc.fileList
+	default:
+		wordList = r.AllFunctionNames()
+	}
+	return varPrefix, word, wordList
 }
 
 func (tc *TabComplete) allVariableNames(r *rpn.RPN) []string {

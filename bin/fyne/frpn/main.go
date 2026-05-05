@@ -66,9 +66,15 @@ func interactiveChannel(rpnInst chan *rpn.RPN) error {
 	if err == nil {
 		histFile = filepath.Join(home, startup.HistFile)
 	}
+	var tabc ReadlineTabComplete
+	tabc.Init(rpnInst, &fs.FileOpsDriver{})
+	completer := readline.NewPrefixCompleter(
+		readline.PcItemDynamic(tabc.tabCompleteCallback),
+	)
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:      "> ",
-		HistoryFile: histFile,
+		Prompt:       "> ",
+		HistoryFile:  histFile,
+		AutoComplete: completer,
 	})
 	if err != nil {
 		panic(err)
