@@ -18,6 +18,7 @@ import (
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
 	"mattwach/rpngo/common/window"
+	"mattwach/rpngo/common/window/tabcomplete"
 	"path/filepath"
 	"strings"
 )
@@ -35,12 +36,10 @@ type getLine struct {
 	histpath     string
 	autoHistory  bool
 	fs           fileops.FileOpsDriver
+	tabc         tabcomplete.TabComplete
 	// line is the current line.  It's kept here to support entering
 	// scrolling mode without losing the current line contents.
-	names []string
-	line  []byte
-	// cached list of files for tab complete
-	fileList []string
+	line []byte
 }
 
 func initGetLine(input Input, txtb *window.TextBuffer, fs fileops.FileOpsDriver) *getLine {
@@ -58,9 +57,8 @@ func initGetLine(input Input, txtb *window.TextBuffer, fs fileops.FileOpsDriver)
 		historyCount: 0,
 		histpath:     histpath,
 		fs:           fs,
-		fileList:     make([]string, 0, 16),
-		names:        make([]string, 0, 16), // object allocated on the heap: escapes at line 48
 	}
+	gl.tabc.Init(fs)
 	return gl
 }
 
@@ -129,7 +127,7 @@ func (gl *getLine) get(r *rpn.RPN) (string, error) {
 	gl.txtb.Cursor(true)
 	defer gl.txtb.Cursor(false)
 	gl.line = gl.line[:0]
-	gl.fileList = gl.fileList[:0]
+	gl.tabc.Clear()
 	idx := 0
 	// how many steps back into history, with 0 being not in history
 	arrowKeyIdx := 0
@@ -390,4 +388,70 @@ func (gl *getLine) drawScrollingBanner(enable bool) {
 
 func delete(line []byte, idx int) []byte {
 	return append(line[:idx], line[idx+1:]...)
+}
+
+func (gl *getLine) tabComplete(r *rpn.RPN, idx int) int {
+	if (idx <= 0) || (idx > len(gl.line)) {
+		return idx
+	}
+	if (idx < len(gl.line)) && gl.line[idx] != ' ' {
+		return idx
+	}
+
+	startIdx := gl.findStartOfWord(idx)
+	if startIdx == idx {
+		return idx
+	}
+
+	word := string(gl.line[startIdx:idx])
+	newWord := gl.tabc.FindNewWord(r, word)
+
+	if len(newWord) == 0 {
+		return idx
+	}
+
+	startLine := string(gl.line[:startIdx])
+	endLine := string(gl.line[idx:])
+	gl.line = gl.line[:0]
+	for _, c := range startLine {
+		gl.line = append(gl.line, byte(c))
+	}
+	for _, c := range newWord {
+		gl.line = append(gl.line, byte(c))
+	}
+	for _, c := range endLine {
+		gl.line = append(gl.line, byte(c))
+	}
+
+	// update the line
+	gl.txtb.Shift(startIdx - idx)
+	gl.txtb.PrintBytes(gl.line[startIdx:], true)
+	numSpaces := len(word) - len(newWord)
+	if numSpaces > 0 {
+		for i := 0; i < numSpaces; i++ {
+			gl.txtb.Write(' ', true)
+		}
+		gl.txtb.Shift(-numSpaces)
+	}
+	gl.txtb.Shift(-len(endLine))
+
+	idx = idx + len(newWord) - len(word)
+	return idx
+}
+
+func (gl *getLine) findStartOfWord(idx int) int {
+	startIdx := idx - 1
+	for {
+		if startIdx <= 0 {
+			return 0
+		}
+		lastChar := gl.line[startIdx]
+		switch lastChar {
+		case '@', '$', '{', '\'', '"':
+			return startIdx
+		case ' ':
+			return startIdx + 1
+		}
+		startIdx--
+	}
 }
