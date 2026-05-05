@@ -31,8 +31,8 @@ func execLine(rpnInst chan *rpn.RPN, rl *readline.Instance, fw *fynewin.FyneWin)
 		fmt.Printf("error: %v\n", err)
 	}
 
-	for _, f := range r.Frames {
-		fmt.Println(f.String(true))
+	if len(r.Frames) > 0 {
+		fmt.Println(r.Frames[len(r.Frames)-1].String(true))
 	}
 
 	fw.Update(r, 0, 0, true)
