@@ -4,39 +4,21 @@ package main
 import (
 	"fmt"
 	"mattwach/rpngo/common/drivers/posix/fs"
-	"mattwach/rpngo/common/fileops"
-	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
 	"mattwach/rpngo/common/window/commands"
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin"
+	"mattwach/rpngo/drivers/readline/window"
 	"os"
-	"path/filepath"
-
-	"github.com/chzyer/readline"
 )
 
-func execLine(rpnInst chan *rpn.RPN, rl *readline.Instance, fw *fynewin.FyneWin) error {
-	line, err := rl.Readline()
-	if err != nil {
-		return err
-	}
+func updateFyne(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) {
 	r := <-rpnInst
 	defer func() {
 		rpnInst <- r
 	}()
-	err = parse.Fields(line, r.Exec)
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-	}
-
-	if len(r.Frames) > 0 {
-		fmt.Println(r.Frames[len(r.Frames)-1].String(true))
-	}
-
 	fw.Update(r, 0, 0, true)
-	return nil
 }
 
 func interactive(r *rpn.RPN) error {
@@ -61,25 +43,11 @@ func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
 }
 
 func interactiveChannel(rpnInst chan *rpn.RPN) error {
-	histFile := startup.HistFile
-	home, err := fileops.HomeDir()
-	if err == nil {
-		histFile = filepath.Join(home, startup.HistFile)
+	var rlw window.ReadlineWindow
+	if err := rlw.Init(rpnInst); err != nil {
+		return err
 	}
-	var tabc ReadlineTabComplete
-	tabc.Init(rpnInst, &fs.FileOpsDriver{})
-	completer := readline.NewPrefixCompleter(
-		readline.PcItemDynamic(tabc.tabCompleteCallback),
-	)
-	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       "> ",
-		HistoryFile:  histFile,
-		AutoComplete: completer,
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer rl.Close()
+	defer rlw.Close()
 	fw := fynewin.FyneWin{}
 	fw.Register(rpnInst)
 
@@ -88,9 +56,10 @@ func interactiveChannel(rpnInst chan *rpn.RPN) error {
 	}
 	go func() {
 		for {
-			if err := execLine(rpnInst, rl, &fw); err != nil {
+			if err := rlw.ExecLine(); err != nil {
 				break
 			}
+			updateFyne(rpnInst, &fw)
 		}
 
 		fw.Shutdown()
