@@ -15,12 +15,15 @@ import (
 )
 
 type ReadlineWindow struct {
-	inst    *readline.Instance
-	rpnInst chan *rpn.RPN
+	inst       *readline.Instance
+	rpnInst    chan *rpn.RPN
+	showFrames int
+	autofn     []string
 }
 
 func (rlw *ReadlineWindow) Init(rpnInst chan *rpn.RPN) error {
 	rlw.rpnInst = rpnInst
+	rlw.showFrames = 1
 	histFile := startup.HistFile
 	home, err := fileops.HomeDir()
 	if err == nil {
@@ -44,6 +47,7 @@ func (rlw *ReadlineWindow) Close() {
 }
 
 func (rlw *ReadlineWindow) ExecLine() error {
+	rlw.autoFn()
 	line, err := rlw.inst.Readline()
 	if err != nil {
 		return err
@@ -55,12 +59,37 @@ func (rlw *ReadlineWindow) ExecLine() error {
 	err = parse.Fields(line, r.Exec)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
-	}
-
-	if len(r.Frames) > 0 {
-		fmt.Println(r.Frames[len(r.Frames)-1].String(true))
+	} else {
+		rlw.printFrames(r)
 	}
 	return nil
+}
+
+func (rlw *ReadlineWindow) autoFn() {
+	if len(rlw.autofn) == 0 {
+		return
+	}
+	r := <-rlw.rpnInst
+	defer func() {
+		rlw.rpnInst <- r
+	}()
+	if err := r.ExecSlice(rlw.autofn); err != nil {
+		fmt.Printf("autofn error: %v\n", err)
+	}
+}
+
+func (rlw *ReadlineWindow) printFrames(r *rpn.RPN) {
+	count := len(r.Frames)
+	if rlw.showFrames < count {
+		count = rlw.showFrames
+	}
+	if count == 0 {
+		return
+	}
+	for i := 0; i < count; i++ {
+		f := r.Frames[len(r.Frames)-count+i]
+		fmt.Println(f.String(true))
+	}
 }
 
 func (rlw *ReadlineWindow) ResizeWindow(x, y, w, h int) error {
@@ -85,16 +114,4 @@ func (w *ReadlineWindow) Update(r *rpn.RPN, force bool) error {
 
 func (rlw *ReadlineWindow) Type() string {
 	return "input"
-}
-
-func (rlw *ReadlineWindow) SetProp(name string, val rpn.Frame) error {
-	return nil
-}
-
-func (rlw *ReadlineWindow) GetProp(name string) (rpn.Frame, error) {
-	return rpn.Frame{}, nil
-}
-
-func (rlw *ReadlineWindow) ListProps() []string {
-	return nil
 }
