@@ -298,3 +298,71 @@ func complexString(v float64) string {
 	}
 	return strconv.FormatFloat(v, 'g', 16, 64) + "i"
 }
+
+type roundedStringData struct {
+	buff      [32]byte
+	dec       [12]byte
+	inDecimal bool
+	didx      int8
+	idx       int
+}
+
+func (rsd *roundedStringData) reset() {
+	rsd.inDecimal = false
+	rsd.didx = 0
+	rsd.idx = 0
+}
+
+var rsd roundedStringData
+
+func (f *Frame) RoundedString(round int8) string {
+	s := f.String(true)
+	if !f.IsComplex() || (round < 0) {
+		return s
+	}
+	rsd.reset() // This is done to avoid heap allocations in tinygo
+
+	leftDecimalFn := func() {
+		if round > 0 {
+			iv, _ := strconv.Atoi(string(rsd.dec[:rsd.didx]))
+			if rsd.didx > round {
+				iv = (iv + 5) / 10
+			}
+			for _, b := range strconv.Itoa(int(iv)) {
+				rsd.buff[rsd.idx] = byte(b)
+				rsd.idx++
+			}
+		}
+		rsd.inDecimal = false
+	}
+
+	for _, c := range s {
+		if rsd.inDecimal {
+			if c == '.' {
+				// skip
+			} else if (c < '0') || (c > '9') {
+				leftDecimalFn()
+			} else if rsd.didx <= round {
+				rsd.dec[rsd.didx] = byte(c)
+				rsd.didx++
+			}
+		}
+		if !rsd.inDecimal {
+			rsd.buff[rsd.idx] = byte(c)
+			rsd.idx++
+			if c == '.' {
+				rsd.didx = 0
+				rsd.inDecimal = true
+				if round == 0 {
+					rsd.idx--
+				}
+			}
+		}
+	}
+
+	if rsd.inDecimal {
+		leftDecimalFn()
+	}
+
+	return string(rsd.buff[:rsd.idx])
+}

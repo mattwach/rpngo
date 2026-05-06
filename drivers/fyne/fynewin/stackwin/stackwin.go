@@ -15,14 +15,16 @@ import (
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.
 type StackWin struct {
-	win  fyne.Window
-	data *widget.Entry
+	win   fyne.Window
+	data  *widget.Entry
+	round int8
 }
 
 func New(win fyne.Window, r *rpn.RPN) *StackWin {
 	sw := &StackWin{
-		win:  win,
-		data: widget.NewMultiLineEntry(),
+		win:   win,
+		data:  widget.NewMultiLineEntry(),
+		round: -1,
 	}
 	sw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(sw.data)
@@ -38,7 +40,7 @@ func (sw *StackWin) Update(r *rpn.RPN, force bool) error {
 			for i, f := range r.Frames {
 				lines = append(
 					lines,
-					fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.String(true)))
+					fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.RoundedString(sw.round)))
 			}
 			sw.data.SetText(strings.Join(lines, "\n"))
 		} else {
@@ -75,14 +77,32 @@ func (sw *StackWin) Type() string {
 	return "stack"
 }
 
-func (sw *StackWin) GetProp(name string) (rpn.Frame, error) {
-	return rpn.Frame{}, rpn.ErrUnknownProperty
-}
-
 func (sw *StackWin) SetProp(name string, val rpn.Frame) error {
-	return rpn.ErrUnknownProperty
+	switch name {
+	case "round":
+		v, err := val.BoundedInt(-1, 10)
+		if err != nil {
+			return err
+		}
+		sw.round = int8(v)
+		return nil
+	default:
+		return rpn.ErrUnknownProperty
+	}
 }
 
+func (sw *StackWin) GetProp(name string) (rpn.Frame, error) {
+	switch name {
+	case "round":
+		return rpn.IntFrame(int64(sw.round), rpn.INTEGER_FRAME), nil
+	default:
+		return rpn.Frame{}, rpn.ErrUnknownProperty
+	}
+}
+
+var props = []string{"round"}
+
+// Lists props.  Do not nodify return value.
 func (sw *StackWin) ListProps() []string {
-	return nil
+	return props
 }
