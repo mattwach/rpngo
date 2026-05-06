@@ -20,6 +20,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/theme"
 )
 
 type child struct {
@@ -79,6 +80,7 @@ func (f *FyneWin) Run() {
 
 	log.Printf("fyne starting")
 	f.fapp = app.New()
+	f.fapp.Settings().SetTheme(theme.DarkTheme())
 	f.fapp.SetIcon(resourceRpngoiconPng)
 	// need to create a fyne window and hide it or it will kill rpngo
 	// when all windows are cleared
