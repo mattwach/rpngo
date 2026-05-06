@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
+	"mattwach/rpngo/drivers/fyne/fynewin/customwidget"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -24,35 +25,16 @@ type FynePlotWin struct {
 	canvas        interactiveImage
 	autoXCheckbox *widget.Check
 	autoYCheckbox *widget.Check
-	xMin          *customEntry
-	xMax          *customEntry
-	yMin          *customEntry
-	yMax          *customEntry
-	steps         *customEntry
+	xMin          *customwidget.CustomEntry
+	xMax          *customwidget.CustomEntry
+	yMin          *customwidget.CustomEntry
+	yMax          *customwidget.CustomEntry
+	steps         *customwidget.CustomEntry
 	color         color.RGBA
 	clearFirst    bool
 }
 
-type customEntry struct {
-	widget.Entry
-}
-
 const minEntryWidth = 80
-
-func (e *customEntry) MinSize() fyne.Size {
-	ms := e.Entry.MinSize() // Get default minimum size
-	if ms.Width < minEntryWidth {
-		ms.Width = minEntryWidth // Set minimum width if it's less than the specified minimum
-	}
-	return ms
-}
-
-func newCustomEntry(onSubmitted func(string)) *customEntry {
-	e := &customEntry{}
-	e.ExtendBaseWidget(e)
-	e.OnSubmitted = onSubmitted
-	return e
-}
 
 // New is expected to be called in the context of the main thread.
 func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *FynePlotWin {
@@ -79,15 +61,15 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 		})
 	})
 	xMinLabel := widget.NewLabel("Xmin")
-	pw.xMin = newCustomEntry(pw.updateXMinEntry)
+	pw.xMin = customwidget.NewCustomEntry(pw.updateXMinEntry, minEntryWidth)
 	xMaxLabel := widget.NewLabel("Xmax")
-	pw.xMax = newCustomEntry(pw.updateXMaxEntry)
+	pw.xMax = customwidget.NewCustomEntry(pw.updateXMaxEntry, minEntryWidth)
 	yMinLabel := widget.NewLabel("Ymin")
-	pw.yMin = newCustomEntry(pw.updateYMinEntry)
+	pw.yMin = customwidget.NewCustomEntry(pw.updateYMinEntry, minEntryWidth)
 	yMaxLabel := widget.NewLabel("Ymax")
-	pw.yMax = newCustomEntry(pw.updateYMaxEntry)
+	pw.yMax = customwidget.NewCustomEntry(pw.updateYMaxEntry, minEntryWidth)
 	stepsLabel := widget.NewLabel("Steps")
-	pw.steps = newCustomEntry(pw.updateStepsEntry)
+	pw.steps = customwidget.NewCustomEntry(pw.updateStepsEntry, minEntryWidth)
 	bottom := container.NewHBox(
 		pw.autoXCheckbox,
 		pw.autoYCheckbox,
