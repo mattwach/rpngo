@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/chzyer/readline"
+	"github.com/fatih/color"
 )
 
 type ReadlineWindow struct {
@@ -56,9 +57,11 @@ func (rlw *ReadlineWindow) ExecLine() error {
 	defer func() {
 		rlw.rpnInst <- r
 	}()
+	color.Set(color.FgYellow)
 	err = parse.Fields(line, r.Exec)
+	color.Unset()
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
+		color.Red("%v\n", err)
 	} else {
 		rlw.printFrames(r)
 	}
@@ -74,7 +77,7 @@ func (rlw *ReadlineWindow) autoFn() {
 		rlw.rpnInst <- r
 	}()
 	if err := r.ExecSlice(rlw.autofn); err != nil {
-		fmt.Printf("autofn error: %v\n", err)
+		color.Red("autofn error: %v\n", err)
 	}
 }
 
@@ -86,10 +89,12 @@ func (rlw *ReadlineWindow) printFrames(r *rpn.RPN) {
 	if count == 0 {
 		return
 	}
+	color.Set(color.FgCyan)
 	for i := 0; i < count; i++ {
 		f := r.Frames[len(r.Frames)-count+i]
 		fmt.Println(f.String(true))
 	}
+	color.Unset()
 }
 
 func (rlw *ReadlineWindow) ResizeWindow(x, y, w, h int) error {
