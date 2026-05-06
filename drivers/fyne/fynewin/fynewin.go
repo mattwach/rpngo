@@ -36,6 +36,9 @@ type FyneWin struct {
 }
 
 func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
+	if f.children == nil {
+		f.children = make(map[string]child)
+	}
 	f.rpnInst = rpnInst
 	r := <-f.rpnInst
 	defer func() {
@@ -44,6 +47,18 @@ func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
 	common.RegisterConceptHelp(r, false)
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
+}
+
+func (f *FyneWin) AddChild(name string, wprops window.WindowWithProps, win fyne.Window) error {
+	if f.children == nil {
+		f.children = make(map[string]child)
+	}
+	_, ok := f.children[name]
+	if ok {
+		return rpn.ErrWindowAlreadyExists
+	}
+	f.children[name] = child{wprops, win}
+	return nil
 }
 
 // Run starts fyne and blocks.
@@ -63,7 +78,6 @@ func (f *FyneWin) Run() {
 	}
 
 	log.Printf("fyne starting")
-	f.children = make(map[string]child)
 	f.fapp = app.New()
 	f.fapp.SetIcon(resourceRpngoiconPng)
 	// need to create a fyne window and hide it or it will kill rpngo
@@ -109,6 +123,9 @@ func (f *FyneWin) FindWindow(name string) window.WindowWithProps {
 
 // Needed for compatibility with the plorwin.WindowManager interface
 func (f *FyneWin) DeleteWindowOrGroup(name string) error {
+	if name == "i" {
+		return rpn.ErrCanNotDeleteInputWindow
+	}
 	w := f.children[name].fwin
 	if w == nil {
 		return rpn.ErrNotFound

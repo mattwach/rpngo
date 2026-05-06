@@ -50,6 +50,7 @@ func interactiveChannel(rpnInst chan *rpn.RPN) error {
 	defer rlw.Close()
 	fw := fynewin.FyneWin{}
 	fw.Register(rpnInst)
+	fw.AddChild("i", &rlw, nil)
 
 	if err := initRPN(rpnInst, &fw); err != nil {
 		return err
