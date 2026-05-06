@@ -56,37 +56,28 @@ type Plot struct {
 }
 
 type plotWindowCommon struct {
-	MinX      float64
-	MaxX      float64
-	MinY      float64
-	MaxY      float64
+	minx      float64
+	maxx      float64
+	miny      float64
+	maxy      float64
 	coloridx  uint8
 	numColors uint8
-	AutoX     bool
-	AutoY     bool
-	MinV      float64
-	MaxV      float64
-	Steps     uint32
+	autox     bool
+	autoy     bool
+	minv      float64
+	maxv      float64
+	steps     uint32
 	plots     []Plot
 	stats     PointStats
 }
 
 func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
-	pw.AutoX = true
-	pw.AutoY = true
-	pw.MinV = -1
-	pw.MaxV = 1
-	pw.Steps = steps
+	pw.autox = true
+	pw.autoy = true
+	pw.minv = -1
+	pw.maxv = 1
+	pw.steps = steps
 	pw.numColors = numColors
-}
-
-func (pw *plotWindowCommon) HasAParametricPlot() bool {
-	for _, plot := range pw.plots {
-		if plot.isParametric {
-			return true
-		}
-	}
-	return false
 }
 
 func (pw *plotWindowCommon) nextColor(numColors uint8) {
@@ -134,28 +125,28 @@ func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
 	// emergency corrections to avoid hanging in other parts of the code.
 	// This will only happen if other parts of the code fail to
 	// keep these values proper.
-	if !pw.AutoX && (pw.MinX >= pw.MaxX) {
-		log.Printf("warning: MinX >= MaxX (%f >= %f), adjusting to avoid math issues", pw.MinX, pw.MaxX)
-		pw.AutoX = true
+	if !pw.autox && (pw.minx >= pw.maxx) {
+		log.Printf("warning: MinX >= MaxX (%f >= %f), adjusting to avoid math issues", pw.minx, pw.maxx)
+		pw.autox = true
 	}
-	if !pw.AutoY && (pw.MinY >= pw.MaxY) {
-		log.Printf("warning: MinY >= MaxY (%f >= %f), adjusting to avoid math issues", pw.MinY, pw.MaxY)
-		pw.AutoY = true
+	if !pw.autoy && (pw.miny >= pw.maxy) {
+		log.Printf("warning: MinY >= MaxY (%f >= %f), adjusting to avoid math issues", pw.miny, pw.maxy)
+		pw.autoy = true
 	}
 	// first determine the ranges
-	if pw.AutoX || pw.AutoY {
+	if pw.autox || pw.autoy {
 		pw.stats.reset()
 		for _, plot := range pw.plots {
-			if err := pw.addPoints(r, plot, pw.Steps, pw.stats.update); err != nil {
+			if err := pw.addPoints(r, plot, pw.steps, pw.stats.update); err != nil {
 				// this plot has some type of error, but there is nothing to be done
 				// here outside of not contributing any more points from this point
 				// to the stats
 			}
 		}
-		if pw.AutoX {
+		if pw.autox {
 			pw.adjustAutoX()
 		}
-		if pw.AutoY {
+		if pw.autoy {
 			pw.adjustAutoY()
 		}
 	}
@@ -164,7 +155,7 @@ func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
 func (pw *plotWindowCommon) createPoints(r *rpn.RPN, fn func(x, y float64, coloridx uint8) error) error {
 	var finalErr error
 	for i, plot := range pw.plots {
-		if err := pw.addPoints(r, plot, pw.Steps, fn); err != nil {
+		if err := pw.addPoints(r, plot, pw.steps, fn); err != nil {
 			r.Print("error plotting {")
 			r.Print(strings.Join(plot.fn, " "))
 			r.Print("}: ")
@@ -182,10 +173,10 @@ func (pw *plotWindowCommon) addPoints(r *rpn.RPN, plot Plot, steps uint32, fn fu
 		return nil
 	}
 	startlen := r.StackLen()
-	step := (pw.MaxV - pw.MinV) / float64(steps)
+	step := (pw.maxv - pw.minv) / float64(steps)
 	var x float64
 	t0 := true
-	for v := pw.MinV; v <= pw.MaxV; v += step {
+	for v := pw.minv; v <= pw.maxv; v += step {
 		if t0 {
 			if err := setT0(r, true); err != nil {
 				return err
@@ -249,39 +240,39 @@ func setT0(r *rpn.RPN, t0 bool) error {
 }
 
 func (pw *plotWindowCommon) adjustAutoX() {
-	pw.MinX = pw.stats.minx
-	pw.MaxX = pw.stats.maxx
-	if pw.MinX == pw.MaxX {
+	pw.minx = pw.stats.minx
+	pw.maxx = pw.stats.maxx
+	if pw.minx == pw.maxx {
 		// create a little spread to avoid math issues
-		pw.MinX -= 1.0
-		pw.MaxX += 1.0
+		pw.minx -= 1.0
+		pw.maxx += 1.0
 	}
 }
 
 func (pw *plotWindowCommon) adjustAutoY() {
-	pw.MinY = pw.stats.miny
-	pw.MaxY = pw.stats.maxy
-	if pw.MinY == pw.MaxY {
+	pw.miny = pw.stats.miny
+	pw.maxy = pw.stats.maxy
+	if pw.miny == pw.maxy {
 		// create a little spread to avoid math issues
-		pw.MinY -= 1.0
-		pw.MaxY += 1.0
+		pw.miny -= 1.0
+		pw.maxy += 1.0
 	}
 	// open up the y a bit
-	delta := (pw.MaxY - pw.MinY) / 5
-	pw.MaxY += delta
-	pw.MinY -= delta
+	delta := (pw.maxy - pw.miny) / 5
+	pw.maxy += delta
+	pw.miny -= delta
 }
 
 func (pw *plotWindowCommon) pixelToCoordX(x, w int) float64 {
-	return pw.MinX + (pw.MaxX-pw.MinX)*(float64(x)/float64(w))
+	return pw.minx + (pw.maxx-pw.minx)*(float64(x)/float64(w))
 }
 
 func (pw *plotWindowCommon) pixelToCoordY(y, h int) float64 {
-	return pw.MinY + (pw.MaxY-pw.MinY)*(float64(h-y)/float64(h))
+	return pw.miny + (pw.maxy-pw.miny)*(float64(h-y)/float64(h))
 }
 
 func (pw *plotWindowCommon) transformX(x float64, w int) (int, bool) {
-	x = (x - pw.MinX) / (pw.MaxX - pw.MinX)
+	x = (x - pw.minx) / (pw.maxx - pw.minx)
 	if x < 0 {
 		return 0, false
 	}
@@ -293,7 +284,7 @@ func (pw *plotWindowCommon) transformX(x float64, w int) (int, bool) {
 }
 
 func (pw *plotWindowCommon) transformY(y float64, h int) (int, bool) {
-	y = (y - pw.MinY) / (pw.MaxY - pw.MinY)
+	y = (y - pw.miny) / (pw.maxy - pw.miny)
 	if y < 0 {
 		return 0, false
 	}

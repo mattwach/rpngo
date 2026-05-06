@@ -14,53 +14,53 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 		if err != nil {
 			return err
 		}
-		pw.MinX = v
-		if pw.MaxX <= pw.MinX {
-			pw.MaxX = pw.MinX + 1
+		pw.minx = v
+		if pw.maxx <= pw.minx {
+			pw.maxx = pw.minx + 1
 		}
-		pw.AutoX = false
+		pw.autox = false
 		return nil
 	case "maxx":
 		v, err := val.Real()
 		if err != nil {
 			return err
 		}
-		pw.MaxX = v
-		if pw.MaxX <= pw.MinX {
-			pw.MinX = pw.MaxX - 1
+		pw.maxx = v
+		if pw.maxx <= pw.minx {
+			pw.minx = pw.maxx - 1
 		}
-		pw.AutoX = false
+		pw.autox = false
 		return nil
 	case "miny":
 		v, err := val.Real()
 		if err != nil {
 			return err
 		}
-		pw.MinY = v
-		if pw.MaxY <= pw.MinY {
-			pw.MaxY = pw.MinY + 1
+		pw.miny = v
+		if pw.maxy <= pw.miny {
+			pw.maxy = pw.miny + 1
 		}
-		pw.AutoY = false
+		pw.autoy = false
 		return nil
 	case "maxy":
 		v, err := val.Real()
 		if err != nil {
 			return err
 		}
-		pw.MaxY = v
-		if pw.MaxY <= pw.MinY {
-			pw.MinY = pw.MaxY - 1
+		pw.maxy = v
+		if pw.maxy <= pw.miny {
+			pw.miny = pw.maxy - 1
 		}
-		pw.AutoY = false
+		pw.autoy = false
 		return nil
 	case "minv":
 		v, err := val.Real()
 		if err != nil {
 			return err
 		}
-		pw.MinV = v
-		if pw.MaxV <= pw.MinV {
-			pw.MaxV = pw.MinV + 1
+		pw.minv = v
+		if pw.maxv <= pw.minv {
+			pw.maxv = pw.minv + 1
 		}
 		return nil
 	case "maxv":
@@ -68,9 +68,9 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 		if err != nil {
 			return err
 		}
-		pw.MaxV = v
-		if pw.MaxV <= pw.MinV {
-			pw.MinV = pw.MaxV - 1
+		pw.maxv = v
+		if pw.maxv <= pw.minv {
+			pw.minv = pw.maxv - 1
 		}
 		return nil
 	case "autox":
@@ -78,21 +78,21 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 		if err != nil {
 			return err
 		}
-		pw.AutoX = v
+		pw.autox = v
 		return nil
 	case "autoy":
 		v, err := val.Bool()
 		if err != nil {
 			return err
 		}
-		pw.AutoY = v
+		pw.autoy = v
 		return nil
 	case "steps":
 		v, err := val.BoundedInt(1, maxSteps)
 		if err != nil {
 			return err
 		}
-		pw.Steps = uint32(v)
+		pw.steps = uint32(v)
 		return nil
 	case "numplots":
 		v, err := val.Int()
@@ -140,25 +140,25 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 func (pw *plotWindowCommon) getProp(name string) (rpn.Frame, error) {
 	switch name {
 	case "minx":
-		return rpn.RealFrame(pw.MinX), nil
+		return rpn.RealFrame(pw.minx), nil
 	case "maxx":
-		return rpn.RealFrame(pw.MaxX), nil
+		return rpn.RealFrame(pw.maxx), nil
 	case "miny":
-		return rpn.RealFrame(pw.MinY), nil
+		return rpn.RealFrame(pw.miny), nil
 	case "maxy":
-		return rpn.RealFrame(pw.MaxY), nil
+		return rpn.RealFrame(pw.maxy), nil
 	case "minv":
-		return rpn.RealFrame(pw.MinV), nil
+		return rpn.RealFrame(pw.minv), nil
 	case "maxv":
-		return rpn.RealFrame(pw.MaxV), nil
+		return rpn.RealFrame(pw.maxv), nil
 	case "autox":
-		return rpn.BoolFrame(pw.AutoX), nil
+		return rpn.BoolFrame(pw.autox), nil
 	case "autoy":
-		return rpn.BoolFrame(pw.AutoY), nil
+		return rpn.BoolFrame(pw.autoy), nil
 	case "numplots":
 		return rpn.IntFrame(int64(len(pw.plots)), rpn.INTEGER_FRAME), nil
 	case "steps":
-		return rpn.IntFrame(int64(pw.Steps), rpn.INTEGER_FRAME), nil
+		return rpn.IntFrame(int64(pw.steps), rpn.INTEGER_FRAME), nil
 	}
 
 	if strings.HasPrefix(name, "color") && (len(name) > 5) {

@@ -64,8 +64,7 @@ func (i *interactiveImage) MouseDown(ev *desktop.MouseEvent) {
 	i.posx = ev.Position.X
 	i.posy = ev.Position.Y
 	i.anchorX, i.anchorY = i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-	i.plotw = float64(i.parent.Common.MaxX - i.parent.Common.MinX)
-	i.ploth = float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+	i.plotw, i.ploth = i.plotSize()
 }
 
 // MouseIn is required to satisfy the desktop.Mouseable interface, but is not
@@ -128,6 +127,18 @@ func (i *interactiveImage) Resize(size fyne.Size) {
 
 const scrollPercent = 0.25
 
+func (i *interactiveImage) plotSize() (float64, float64) {
+	minx, _ := i.parent.GetProp("minx")
+	maxx, _ := i.parent.GetProp("maxx")
+	plotw := float64(maxx.UnsafeReal() - minx.UnsafeReal())
+
+	miny, _ := i.parent.GetProp("miny")
+	maxy, _ := i.parent.GetProp("maxy")
+	ploth := float64(maxy.UnsafeReal() - miny.UnsafeReal())
+
+	return plotw, ploth
+}
+
 // Scrolled satisfies the desktop.Scroller interface and is called when the
 // user scrolls while the mouse is over the widget. It zooms in or out of the
 // graph depending on the scroll direction.
@@ -141,8 +152,7 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 		defer func() {
 			i.rpnInstance <- r
 		}()
-		plotw := float64(i.parent.Common.MaxX - i.parent.Common.MinX)
-		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+		plotw, ploth := i.plotSize()
 
 		if ev.Scrolled.DY > 0 {
 			// zoom in
@@ -159,16 +169,19 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 		xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
 		yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
 		anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
+		minx := anchorX - xoffset
 		if i.isAutoX() {
-			i.parent.Common.MinV = anchorX - xoffset
-			i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+			i.parent.SetProp("minv", rpn.RealFrame(minx))
+			i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
 		} else {
-			i.parent.Common.MinX = anchorX - xoffset
-			i.parent.Common.MaxX = i.parent.Common.MinX + plotw
+			i.parent.SetProp("minx", rpn.RealFrame(minx))
+			i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
 		}
-		if !i.parent.Common.AutoY {
-			i.parent.Common.MinY = anchorY - yoffset
-			i.parent.Common.MaxY = i.parent.Common.MinY + ploth
+		autoy, _ := i.parent.GetProp("autoy")
+		if !autoy.UnsafeBool() {
+			miny := anchorY - yoffset
+			i.parent.SetProp("miny", rpn.RealFrame(miny))
+			i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
 		}
 		i.parent.Update(r, true)
 	default:
@@ -189,16 +202,18 @@ func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
 		// under the cursor is still at anchorX, anchorY
 		xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
 		yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
+		minx := i.anchorX - xoffset
 		if i.isAutoX() {
-			i.parent.Common.MinV = i.anchorX - xoffset
-			i.parent.Common.MaxV = i.parent.Common.MinV + i.plotw
+			i.parent.SetProp("minv", rpn.RealFrame(minx))
+			i.parent.SetProp("maxv", rpn.RealFrame(minx+i.plotw))
 		} else {
-			i.parent.Common.MinX = i.anchorX - xoffset
-			i.parent.Common.MaxX = i.parent.Common.MinX + i.plotw
+			i.parent.SetProp("minx", rpn.RealFrame(minx))
+			i.parent.SetProp("maxx", rpn.RealFrame(minx+i.plotw))
 		}
-		i.parent.Common.AutoY = false
-		i.parent.Common.MinY = i.anchorY - yoffset
-		i.parent.Common.MaxY = i.parent.Common.MinY + i.ploth
+		i.parent.SetProp("autoy", rpn.BoolFrame(false))
+		miny := i.anchorY - yoffset
+		i.parent.SetProp("miny", rpn.RealFrame(miny))
+		i.parent.SetProp("maxy", rpn.RealFrame(miny+i.ploth))
 		i.parent.Update(r, true)
 	default:
 		// no action if the rpn instance is not available
@@ -217,8 +232,7 @@ func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
 		defer func() {
 			i.rpnInstance <- r
 		}()
-		plotw := float64(i.parent.Common.MaxX - i.parent.Common.MinX)
-		ploth := float64(i.parent.Common.MaxY - i.parent.Common.MinY)
+		plotw, ploth := i.plotSize()
 
 		xscale := (ev.Position.X - i.posx) / float32(i.ggimg.Width()) * magnifyFactor
 		plotw *= (1 - float64(xscale))
@@ -230,16 +244,18 @@ func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
 		// the point under the cursor fixed
 		xoffset := plotw * float64(i.posx) / float64(i.ggimg.Width())
 		yoffset := ploth * (float64(i.ggimg.Height()) - float64(i.posy)) / float64(i.ggimg.Height())
+		minx := i.anchorX - xoffset
 		if i.isAutoX() {
-			i.parent.Common.MinV = i.anchorX - xoffset
-			i.parent.Common.MaxV = i.parent.Common.MinV + plotw
+			i.parent.SetProp("minv", rpn.RealFrame(minx))
+			i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
 		} else {
-			i.parent.Common.MinX = i.anchorX - xoffset
-			i.parent.Common.MaxX = i.parent.Common.MinX + plotw
+			i.parent.SetProp("minx", rpn.RealFrame(minx))
+			i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
 		}
-		i.parent.Common.AutoY = false
-		i.parent.Common.MinY = i.anchorY - yoffset
-		i.parent.Common.MaxY = i.parent.Common.MinY + ploth
+		i.parent.SetProp("autoy", rpn.BoolFrame(false))
+		miny := i.anchorY - yoffset
+		i.parent.SetProp("miny", rpn.RealFrame(miny))
+		i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
 		i.parent.Update(r, true)
 		i.posx = ev.Position.X
 		i.posy = ev.Position.Y
@@ -265,11 +281,12 @@ func (i *interactiveImage) drawPointerCoordinates(ev *desktop.MouseEvent) {
 
 // Returns true if the plot should be usnig auto x mode
 func (i *interactiveImage) isAutoX() bool {
-	if !i.parent.Common.AutoX {
+	autox, _ := i.parent.GetProp("autox")
+	if !autox.UnsafeBool() {
 		return false
 	}
-	if i.parent.Common.HasAParametricPlot() {
-		i.parent.Common.AutoX = false
+	if i.parent.HasAParametricPlot() {
+		i.parent.SetProp("autox", rpn.BoolFrame(false))
 		return false
 	}
 	return true

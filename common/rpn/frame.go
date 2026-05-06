@@ -125,6 +125,13 @@ func (f *Frame) Real() (float64, error) {
 	return 0, ErrExpectedANumber
 }
 
+func (f *Frame) UnsafeReal() float64 {
+	if (f.ftype & CLASS_MASK) == COMPLEX_CLASS {
+		return real(f.cmplx)
+	}
+	return float64(f.intv)
+}
+
 func (f *Frame) Int() (int64, error) {
 	if (f.ftype & CLASS_MASK) == INTEGER_CLASS {
 		return f.intv, nil

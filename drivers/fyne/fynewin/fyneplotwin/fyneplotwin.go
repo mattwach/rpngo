@@ -70,12 +70,12 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.parent = parent
 	pw.autoXCheckbox = widget.NewCheck("Auto X", func(b bool) {
 		pw.uiAction(func() {
-			pw.canvas.parent.Common.AutoX = b
+			pw.canvas.parent.SetProp("autox", rpn.BoolFrame(b))
 		})
 	})
 	pw.autoYCheckbox = widget.NewCheck("Auto Y", func(b bool) {
 		pw.uiAction(func() {
-			pw.canvas.parent.Common.AutoY = b
+			pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(b))
 		})
 	})
 	xMinLabel := widget.NewLabel("Xmin")
@@ -136,13 +136,20 @@ func (pw *FynePlotWin) PixelSize() (int, int) {
 func (pw *FynePlotWin) Refresh() {
 	fn := func() {
 		pw.canvas.image.Refresh()
-		pw.autoXCheckbox.SetChecked(pw.canvas.parent.Common.AutoX)
-		pw.autoYCheckbox.SetChecked(pw.canvas.parent.Common.AutoY)
-		pw.xMin.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MinX))
-		pw.xMax.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MaxX))
-		pw.yMin.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MinY))
-		pw.yMax.SetText(fmt.Sprintf("%f", pw.canvas.parent.Common.MaxY))
-		pw.steps.SetText(fmt.Sprintf("%d", pw.canvas.parent.Common.Steps))
+		autox, _ := pw.canvas.parent.GetProp("autox")
+		pw.autoXCheckbox.SetChecked(autox.UnsafeBool())
+		autoy, _ := pw.canvas.parent.GetProp("autoy")
+		pw.autoYCheckbox.SetChecked(autoy.UnsafeBool())
+		minx, _ := pw.canvas.parent.GetProp("minx")
+		pw.xMin.SetText(fmt.Sprintf("%f", minx.UnsafeReal()))
+		maxx, _ := pw.canvas.parent.GetProp("maxx")
+		pw.xMax.SetText(fmt.Sprintf("%f", maxx.UnsafeReal()))
+		miny, _ := pw.canvas.parent.GetProp("miny")
+		pw.yMin.SetText(fmt.Sprintf("%f", miny.UnsafeReal()))
+		maxy, _ := pw.canvas.parent.GetProp("maxy")
+		pw.yMax.SetText(fmt.Sprintf("%f", maxy.UnsafeReal()))
+		steps, _ := pw.canvas.parent.GetProp("steps")
+		pw.steps.SetText(fmt.Sprintf("%d", steps.UnsafeInt()))
 	}
 	if pw.canvas.inMainContext {
 		fn()
@@ -217,9 +224,9 @@ func (pw *FynePlotWin) updateXMinEntry(s string) {
 	val, err := strconv.ParseFloat(s, 64)
 	if err == nil {
 		if pw.canvas.isAutoX() {
-			pw.canvas.parent.Common.MinV = val
+			pw.canvas.parent.SetProp("minv", rpn.RealFrame(val))
 		} else {
-			pw.canvas.parent.Common.MinX = val
+			pw.canvas.parent.SetProp("minx", rpn.RealFrame(val))
 		}
 	}
 	pw.uiAction(func() {})
@@ -229,9 +236,9 @@ func (pw *FynePlotWin) updateXMaxEntry(s string) {
 	val, err := strconv.ParseFloat(s, 64)
 	if err == nil {
 		if pw.canvas.isAutoX() {
-			pw.canvas.parent.Common.MaxV = val
+			pw.canvas.parent.SetProp("maxv", rpn.RealFrame(val))
 		} else {
-			pw.canvas.parent.Common.MaxX = val
+			pw.canvas.parent.SetProp("maxx", rpn.RealFrame(val))
 		}
 	}
 	pw.uiAction(func() {})
@@ -240,8 +247,8 @@ func (pw *FynePlotWin) updateXMaxEntry(s string) {
 func (pw *FynePlotWin) updateYMinEntry(s string) {
 	val, err := strconv.ParseFloat(s, 64)
 	if err == nil {
-		pw.canvas.parent.Common.AutoY = false
-		pw.canvas.parent.Common.MinY = val
+		pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(false))
+		pw.canvas.parent.SetProp("miny", rpn.RealFrame(val))
 	}
 	pw.uiAction(func() {})
 }
@@ -249,17 +256,17 @@ func (pw *FynePlotWin) updateYMinEntry(s string) {
 func (pw *FynePlotWin) updateYMaxEntry(s string) {
 	val, err := strconv.ParseFloat(s, 64)
 	if err == nil {
-		pw.canvas.parent.Common.AutoY = false
-		pw.canvas.parent.Common.MaxY = val
+		pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(false))
+		pw.canvas.parent.SetProp("maxy", rpn.RealFrame(val))
 	}
 	pw.uiAction(func() {})
 }
 
 // parses and updates the steps entry, then updates the plot window
 func (pw *FynePlotWin) updateStepsEntry(s string) {
-	val, err := strconv.ParseInt(s, 10, 32)
-	if (err == nil) && val > 0 {
-		pw.canvas.parent.Common.Steps = uint32(val)
+	val, err := strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		pw.canvas.parent.SetProp("steps", rpn.IntFrame(val, rpn.INTEGER_FRAME))
 	}
 	pw.uiAction(func() {})
 }

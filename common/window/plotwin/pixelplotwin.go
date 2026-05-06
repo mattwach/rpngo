@@ -18,14 +18,14 @@ var colorWheelPixel = []color.RGBA{
 
 type PixelPlotWindow struct {
 	pixw       window.PixelWindow
-	Common     plotWindowCommon
+	common     plotWindowCommon
 	lastcolidx uint8
 	needUpdate bool
 }
 
 func (pw *PixelPlotWindow) Init(pixw window.PixelWindow, steps uint32) {
 	pw.pixw = pixw
-	pw.Common.init(uint8(len(colorWheelPixel)), steps)
+	pw.common.init(uint8(len(colorWheelPixel)), steps)
 }
 
 func (pw *PixelPlotWindow) ResizeWindow(x, y, w, h int) error {
@@ -60,11 +60,11 @@ func (pw *PixelPlotWindow) Update(r *rpn.RPN, force bool) error {
 	if !force && !pw.needUpdate {
 		return nil
 	}
-	pw.Common.setAxisMinMax(r)
+	pw.common.setAxisMinMax(r)
 	pw.drawAxis()
 	pw.lastcolidx = 255
 	// Do not exit the program if this fails
-	_ = pw.Common.createPoints(r, pw.plotPoint)
+	_ = pw.common.createPoints(r, pw.plotPoint)
 	pw.pixw.Refresh()
 	pw.needUpdate = false
 	return nil
@@ -72,15 +72,15 @@ func (pw *PixelPlotWindow) Update(r *rpn.RPN, force bool) error {
 
 func (pw *PixelPlotWindow) SetProp(name string, val rpn.Frame) error {
 	pw.needUpdate = true
-	return pw.Common.setProp(name, val)
+	return pw.common.setProp(name, val)
 }
 
 func (pw *PixelPlotWindow) GetProp(name string) (rpn.Frame, error) {
-	return pw.Common.getProp(name)
+	return pw.common.getProp(name)
 }
 
 func (pw *PixelPlotWindow) ListProps() []string {
-	return pw.Common.ListProps()
+	return pw.common.ListProps()
 }
 
 func (pw *PixelPlotWindow) plotPoint(x, y float64, colidx uint8) error {
@@ -89,11 +89,11 @@ func (pw *PixelPlotWindow) plotPoint(x, y float64, colidx uint8) error {
 		pw.lastcolidx = colidx
 		pw.pixw.Color(colorWheelPixel[colidx])
 	}
-	wx, xok := pw.Common.transformX(x, w)
+	wx, xok := pw.common.transformX(x, w)
 	if !xok {
 		return nil
 	}
-	wy, yok := pw.Common.transformY(y, h)
+	wy, yok := pw.common.transformY(y, h)
 	if !yok {
 		return nil
 	}
@@ -103,5 +103,14 @@ func (pw *PixelPlotWindow) plotPoint(x, y float64, colidx uint8) error {
 
 func (pw *PixelPlotWindow) PixelToCoord(x, y int) (float64, float64) {
 	w, h := pw.pixw.PixelSize()
-	return pw.Common.pixelToCoordX(x, w), pw.Common.pixelToCoordY(y, h)
+	return pw.common.pixelToCoordX(x, w), pw.common.pixelToCoordY(y, h)
+}
+
+func (pw *PixelPlotWindow) HasAParametricPlot() bool {
+	for _, plot := range pw.common.plots {
+		if plot.isParametric {
+			return true
+		}
+	}
+	return false
 }
