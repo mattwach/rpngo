@@ -27,25 +27,27 @@ func New(win fyne.Window, r *rpn.RPN) *StackWin {
 	sw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(sw.data)
 	win.SetContent(scroll)
-	sw.Update(r, true)
 	win.Resize(fyne.NewSize(240, 640))
 	return sw
 }
 
 func (sw *StackWin) Update(r *rpn.RPN, force bool) error {
-	if len(r.Frames) > 0 {
-		lines := make([]string, 0)
-		for i, f := range r.Frames {
-			lines = append(
-				lines,
-				fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.String(true)))
+	fn := func() {
+		if len(r.Frames) > 0 {
+			lines := make([]string, 0)
+			for i, f := range r.Frames {
+				lines = append(
+					lines,
+					fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.String(true)))
+			}
+			sw.data.SetText(strings.Join(lines, "\n"))
+		} else {
+			sw.data.SetText("stack empty")
 		}
-		sw.data.SetText(strings.Join(lines, "\n"))
-	} else {
-		sw.data.SetText("stack empty")
+		sw.data.CursorColumn = 0
+		sw.data.CursorRow = len(r.Frames)
 	}
-	sw.data.CursorColumn = 0
-	sw.data.CursorRow = len(r.Frames)
+	fyne.DoAndWait(fn)
 	return nil
 }
 
