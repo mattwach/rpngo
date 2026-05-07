@@ -315,8 +315,8 @@ func (rsd *roundedStringData) reset() {
 
 var rsd roundedStringData
 
-func (f *Frame) RoundedString(round int8) string {
-	s := f.String(true)
+func (f *Frame) RoundedString(round int8, quote bool) string {
+	s := f.String(quote)
 	if !f.IsComplex() || (round < 0) {
 		return s
 	}

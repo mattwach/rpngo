@@ -19,24 +19,28 @@ import (
 type StackWin struct {
 	rpnInst    chan *rpn.RPN
 	win        fyne.Window
+	clipboard  fyne.Clipboard
 	data       *widget.Entry
 	round      int8
 	roundEntry *customwidget.CustomEntry
+	copyButton *widget.Button
 }
 
-func New(win fyne.Window, rpnInst chan *rpn.RPN) *StackWin {
+func New(win fyne.Window, clipboard fyne.Clipboard, rpnInst chan *rpn.RPN) *StackWin {
 	sw := &StackWin{
-		rpnInst: rpnInst,
-		win:     win,
-		data:    widget.NewMultiLineEntry(),
-		round:   -1,
+		rpnInst:   rpnInst,
+		win:       win,
+		clipboard: clipboard,
+		data:      widget.NewMultiLineEntry(),
+		round:     -1,
 	}
 	sw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(sw.data)
 	roundLabel := widget.NewLabel("round")
 	sw.roundEntry = customwidget.NewCustomEntry(sw.updateRoundEntry, 30)
 	clearButton := widget.NewButton("clear", sw.clearStack)
-	bottom := container.NewHBox(roundLabel, sw.roundEntry, clearButton)
+	sw.copyButton = widget.NewButton("copy", sw.copyToClipboard)
+	bottom := container.NewHBox(roundLabel, sw.roundEntry, clearButton, sw.copyButton)
 	win.SetContent(container.NewBorder(nil, bottom, nil, nil, scroll))
 	win.Resize(fyne.NewSize(240, 640))
 	return sw
@@ -53,7 +57,7 @@ func (sw *StackWin) updateMainContext(r *rpn.RPN) {
 		for i, f := range r.Frames {
 			lines = append(
 				lines,
-				fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.RoundedString(sw.round)))
+				fmt.Sprintf("%3d: %v", len(r.Frames)-i-1, f.RoundedString(sw.round, true)))
 		}
 		sw.data.SetText(strings.Join(lines, "\n"))
 	} else {
@@ -62,6 +66,11 @@ func (sw *StackWin) updateMainContext(r *rpn.RPN) {
 	sw.data.CursorColumn = 0
 	sw.data.CursorRow = len(r.Frames)
 	sw.roundEntry.SetText(fmt.Sprintf("%d", sw.round))
+	if len(r.Frames) > 0 {
+		sw.copyButton.Enable()
+	} else {
+		sw.copyButton.Disable()
+	}
 }
 
 func (sw *StackWin) ResizeWindow(x, y, w, h int) error {
@@ -143,5 +152,15 @@ func (sw *StackWin) updateRoundEntry(s string) {
 func (sw *StackWin) clearStack() {
 	sw.callWithInstance(func(r *rpn.RPN) {
 		r.Frames = r.Frames[:0]
+	})
+}
+
+func (sw *StackWin) copyToClipboard() {
+	sw.callWithInstance(func(r *rpn.RPN) {
+		if len(r.Frames) == 0 {
+			return
+		}
+		val := r.Frames[len(r.Frames)-1].RoundedString(sw.round, false)
+		sw.clipboard.SetContent(val)
 	})
 }

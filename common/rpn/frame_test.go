@@ -521,7 +521,7 @@ func TestRoundedString(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(fmt.Sprintf("%v:%v", d.val.String(false), d.round), func(t *testing.T) {
-			got := d.val.RoundedString(d.round)
+			got := d.val.RoundedString(d.round, true)
 			if got != d.want {
 				t.Errorf("got %v, want %v", got, d.want)
 			}

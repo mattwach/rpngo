@@ -95,7 +95,7 @@ func (sw *StackWindow) Update(rpn *rpn.RPN, unusedForce bool) error {
 		lw := w - len(s)
 		if lw > 0 {
 			sw.txtb.TextColor(window.Cyan)
-			s := f.RoundedString(sw.round)
+			s := f.RoundedString(sw.round, true)
 			if len(s) > lw {
 				s = s[:lw]
 			}

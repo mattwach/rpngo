@@ -207,7 +207,7 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) wind
 
 func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 	return f.wNew(r, "stack", func(w fyne.Window) window.WindowWithProps {
-		return stackwin.New(w, f.rpnInst)
+		return stackwin.New(w, f.fapp.Clipboard(), f.rpnInst)
 	})
 }
 
