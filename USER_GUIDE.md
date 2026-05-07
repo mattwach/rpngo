@@ -10,8 +10,10 @@ You'll first need to [install golang](https://go.dev/doc/install).
 There is a `bin/` directory that contains various different configurations of
 `rpngo` for PCs and for microcontrollers. Here is an overview:
 
-- `bin/minimal/rpn` - A minimal PC (or Raspberry Pi)  version.  Parses `args` and exits.
-- `bin/ncurses/rpn` - Uses [`ncurses`](https://en.wikipedia.org/wiki/Ncurses) to
+- `bin/minimal/mrpn` - A minimal PC (or Raspberry Pi)  version.  Parses `args` and exits.
+- `bin/fyne/frpn` - A version that just runs in the terminal with readline by default,
+  but also supports graphical windows via [fyne](https://fyne.io).
+- `bin/ncurses/nrpn` - Uses [`ncurses`](https://en.wikipedia.org/wiki/Ncurses) to
   support multiple view windows and even text-based plotting
 - `bin/tinygo/serialonly` - A minimal TinyGo build for  microcontrollers that uses
   serial communication only.
@@ -23,7 +25,7 @@ There is a `bin/` directory that contains various different configurations of
 
 ### Desktop / Raspberry Pi
 
-Minimal version:
+#### Minimal version:
 
 ```
 cd bin/minimal/mrpn
@@ -31,7 +33,29 @@ go build
 ./mrpn 2 3 +
 ```
 
-ncurses version 
+#### fyne version
+
+![fyne build](img/fyne_build.png)
+
+```
+cd bin/fyne/frpn
+go build
+./frpn
+```
+
+The `fyne` build also supports quick calculations on the commandline.
+This is similar to the minimal version but the stack and variables are saved
+between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
+commands
+
+```
+./frpn 2 3 +
+  5
+./frpn 4 +
+  9
+```
+
+#### ncurses version 
 
 ![ncurses build](img/ncurses_build.png)
 
@@ -49,10 +73,7 @@ go build
 ./nrpn
 ```
 
-The `ncurses` build also supports quick calculations on the commandline.
-This is similar to the minimal version but the stack and variables are saved
-between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
-commands
+Like the `frpn`, `nprn` supports quick calculations as arguments:
 
 ```
 ./nrpn 2 3 +
