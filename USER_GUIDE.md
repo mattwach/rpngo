@@ -212,7 +212,12 @@ Examples below assume the stack is empty at the start of each line.
 
 ### User Interface
 
-The experience is similar to most terminals:
+There are two interactive user interfaces.  The `frpn` (fyne) interface uses
+[readline](https://github.com/chzyer/readline), which is a popular and
+well-documented interface.
+
+The `nrpn` and TinyGo builds use custom input logic that is similar in function
+to readline (but not identical):
 
 - `Left`, `right`, `ins`, `del`, `backspace`, `home`, and `end` all work like you would expect
 - Press `up` and `down` to visit command history
@@ -242,6 +247,9 @@ while `editf` saves it back to the original file.
 ![ncurses editor](img/editor_on_pc.png)
 
 ![picocalc editor](img/picocalc_editor.jpg)
+
+> Note: `frpn` does not support in-window editing; it assumes you already have a
+> text editor available.
 
 The editor only supports basic features right now:
 
@@ -370,7 +378,8 @@ are covered in more detail in upcoming sections:
 - `.serial` The path of the serial device to use on PCs (e.g.
   `/dev/ttyACMO`).
 - `.wend`, `.wtarget`, `.wweight` These can be used to control
-  how a new window is created. The concept is covered later.
+  how a new window is created. The concept is covered later. (not used with
+  fyne)
 
 Function keys are already setup in the `.rpngo` startup script.
 You can customize them as needed.
@@ -391,7 +400,7 @@ On Picocalc, the following are also defined:
 
 Many type of numbers are supported
 
-    50         # floating point (internally a 5+0i complex)
+    50         # floating point (internally a 50+0i complex)
     50+i       # complex number
     50<1       # polar complex (default is radians)
     deg 50<90  # You can use degrees for the angle.
@@ -549,6 +558,17 @@ you can have zero or more of them.  For example, if you
 want an input window and two separate plot windows, you
 can do it. You might also have two stack windows with
 different configuration options set.  Whatever you want.
+
+### frpn vs others
+
+The `frpn` windows work differently than `nrpn` and PicoCalc (TinyGo)
+implementations.  `frpn` uses fyne and therefore windows are independent and
+managed by the operating system.  You *create* windows with the same commands
+(e.g. `'s' w.new.stack`), but the *layout* commands for splitting up a window
+into panes are not available in `frpn`. In short, if you are only using `frpn`,
+you can ignore the following section.
+
+### Window layout for `nrpn` and PicoCalc
 
 For example, say we want the following:
 
@@ -906,6 +926,16 @@ and on an LCD build:
 
 ![lcd plot 4](img/lcd_plot2.jpg)
 
+and using fyne (`frpn`):
+
+![fyne plot](img/fyne_plot.png)
+
+Note that fyne has additional capabilties not avaiable in other versions:
+
+* Drag the plot with the left mouse
+* Resize the plot by dragging the middle mouse or using the mouse wheel
+* Directly update plot properties using the bottom controls
+
 Let's see how properties changed:
 
     'p' w.listp
@@ -952,7 +982,7 @@ Now that we covered all of the properties, it can be revealed that `plot` and `p
 are simply setting these properties "behind the scenes". You can do so manually,
 if you want.  Here, we plot `sin` and `cos` using the low-level `w.setp` method:
 
-    # manually create a window
+    # manually create a window (for fyne, only use w.new.plot)
     w.reset
     false .wend=
     'p' w.new.plot
@@ -965,6 +995,7 @@ if you want.  Here, we plot `sin` and `cos` using the low-level `w.setp` method:
     'p' 'maxv' 20 w.setp
 
 ![ncurses plot 4](img/ncurses_plot6.png)
+![ncurses plot 4](img/fyne_plot2.png)
 
 ### Special Plot Variables
 
