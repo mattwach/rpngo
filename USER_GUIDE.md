@@ -1461,7 +1461,7 @@ to make you aware in case you have not read it all.
   point number like `0.1`). Delays are useful when animating graphs.
 - `time`: Prints a relative time in floating point seconds. This is useful
   when benchmarking (take a `t0`, do your operation, then do `time $t0 -`).
-- `edit`: A simple editor for multiline strings.
+- `edit`: A simple editor for multiline strings. (not available in `frpn`)
 - `rand`: Create a random value from 0 to 1
 - `input`: Waits for the user to enter input, pushes it to the stack as a
   string.
