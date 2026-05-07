@@ -35,7 +35,8 @@ func New(win fyne.Window, rpnInst chan *rpn.RPN) *StackWin {
 	scroll := container.NewScroll(sw.data)
 	roundLabel := widget.NewLabel("round")
 	sw.roundEntry = customwidget.NewCustomEntry(sw.updateRoundEntry, 30)
-	bottom := container.NewHBox(roundLabel, sw.roundEntry)
+	clearButton := widget.NewButton("clear", sw.clearStack)
+	bottom := container.NewHBox(roundLabel, sw.roundEntry, clearButton)
 	win.SetContent(container.NewBorder(nil, bottom, nil, nil, scroll))
 	win.Resize(fyne.NewSize(240, 640))
 	return sw
@@ -117,18 +118,30 @@ func (sw *StackWin) ListProps() []string {
 	return props
 }
 
-func (sw *StackWin) updateRoundEntry(s string) {
+func (sw *StackWin) callWithInstance(fn func(r *rpn.RPN)) {
 	select {
 	case r := <-sw.rpnInst:
 		defer func() {
 			sw.rpnInst <- r
 		}()
-		val, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			sw.SetProp("round", rpn.IntFrame(val, rpn.INTEGER_FRAME))
-		}
+		fn(r)
 		sw.updateMainContext(r)
 	default:
 		// do nothing
 	}
+}
+
+func (sw *StackWin) updateRoundEntry(s string) {
+	sw.callWithInstance(func(r *rpn.RPN) {
+		val, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			sw.SetProp("round", rpn.IntFrame(val, rpn.INTEGER_FRAME))
+		}
+	})
+}
+
+func (sw *StackWin) clearStack() {
+	sw.callWithInstance(func(r *rpn.RPN) {
+		r.Frames = r.Frames[:0]
+	})
 }
