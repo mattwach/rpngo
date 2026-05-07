@@ -15,6 +15,7 @@ import (
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/fyneplotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
+	"mattwach/rpngo/drivers/fyne/fynewin/varwin"
 	"sort"
 	"strconv"
 
@@ -48,6 +49,7 @@ func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
 	common.RegisterConceptHelp(r, false)
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
+	r.Register("w.new.var", f.wNewVar, rpn.CatWindow, common.WNewVarHelp)
 }
 
 func (f *FyneWin) AddChild(name string, wprops window.WindowWithProps, win fyne.Window) error {
@@ -208,6 +210,12 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) wind
 func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 	return f.wNew(r, "stack", func(w fyne.Window) window.WindowWithProps {
 		return stackwin.New(w, f.fapp.Clipboard(), f.rpnInst)
+	})
+}
+
+func (f *FyneWin) wNewVar(r *rpn.RPN) error {
+	return f.wNew(r, "var", func(w fyne.Window) window.WindowWithProps {
+		return varwin.New(w, f.rpnInst)
 	})
 }
 

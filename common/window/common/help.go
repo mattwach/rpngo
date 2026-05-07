@@ -41,3 +41,6 @@ const WNewStackHelp = "Creates a new stack window with the given name and\n" +
 
 const WNewPlotHelp = "Creates a new plot window with the given name and\n" +
 	"adds it to the root window. Example: 'p1' w.new.plot"
+
+const WNewVarHelp = "Creates a new variable window with the given name and\n" +
+	"adds it to the root window. Example: 'v1' w.new.var"

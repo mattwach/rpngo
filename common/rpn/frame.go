@@ -3,6 +3,7 @@ package rpn
 import (
 	"math/cmplx"
 	"strconv"
+	"strings"
 )
 
 // FrameType is the combination of bitfields
@@ -365,4 +366,13 @@ func (f *Frame) RoundedString(round int8, quote bool) string {
 	}
 
 	return string(rsd.buff[:rsd.idx])
+}
+
+// FramesToString converts a slice of frames to a string.
+func FramesToString(frames []Frame) string {
+	var parts []string
+	for _, f := range frames {
+		parts = append(parts, f.String(true))
+	}
+	return strings.Join(parts, " -> ")
 }

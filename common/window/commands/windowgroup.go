@@ -28,7 +28,7 @@ func InitWindowRootCommands(
 	r.Register("w.new.group", wc.wNewGroup, rpn.CatWindow, wNewGroupHelp)
 	r.Register("w.new.plot", wc.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", wc.wNewStack, rpn.CatWindow, common.WNewStackHelp)
-	r.Register("w.new.var", wc.wNewVar, rpn.CatWindow, wNewVarHelp)
+	r.Register("w.new.var", wc.wNewVar, rpn.CatWindow, common.WNewVarHelp)
 	r.Register("w.reset", wc.wReset, rpn.CatWindow, wResetHelp)
 	r.Register("w.weight", wc.wWeight, rpn.CatWindow, wWeightHelp)
 	return &wc
@@ -134,9 +134,6 @@ func (wc *WindowRootCommands) wNewPlot(r *rpn.RPN) error {
 	wc.root.AddWindowChild(r, pw, name)
 	return nil
 }
-
-const wNewVarHelp = "Creates a new variable window with the given name and\n" +
-	"adds it to the root window. Example: 'v1' w.new.var"
 
 func (wc *WindowRootCommands) wNewVar(r *rpn.RPN) error {
 	txtw, name, err := wc.newTextWindow(r)
