@@ -1442,7 +1442,16 @@ You can also create your own errors like this:
 This can be used when handling `try` errors to rethrow the same error or some
 modified version of it.
 
+## Break
 
+You can type Ctrl-C in most builds of RPNGO to interrupt a running program.
+
+An exception is `frpn`: When a UI window has been opened, ctrl-C will actually
+kill RPNGO, sometimes with an panic. This is a bug that occurs becuase Fyne
+captures and acts on Ctrl-C signals in a way that can not be stopped (I tried).
+Putting the terminal in "raw" mode is a potential future work-around but it's
+not implemented yet due to the complexity.  A workaround that usually works is
+to close the active fyne window.
 
 ### Other Programming Notes
 

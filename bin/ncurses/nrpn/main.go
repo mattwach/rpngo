@@ -13,15 +13,14 @@ import (
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/curses"
 	"os"
-	"os/signal"
 )
 
 const scrollbytes = 256 * 1024
 
 func interactive(r *rpn.RPN) error {
-	var inter interrupt
-	inter.init()
-	r.Interrupt = inter.interrupt
+	var inter startup.Interrupt
+	inter.Init()
+	r.Interrupt = inter.Interrupt
 	screen, err := curses.Init()
 	if err != nil {
 		return err
@@ -59,24 +58,6 @@ func interactive(r *rpn.RPN) error {
 			}
 			return err
 		}
-	}
-}
-
-type interrupt struct {
-	sigc chan os.Signal
-}
-
-func (i *interrupt) init() {
-	i.sigc = make(chan os.Signal, 1)
-	signal.Notify(i.sigc, os.Interrupt)
-}
-
-func (i *interrupt) interrupt() bool {
-	select {
-	case <-i.sigc:
-		return true
-	default:
-		return false
 	}
 }
 

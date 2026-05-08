@@ -13,6 +13,7 @@ import (
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/xmodem"
 	"os"
+	"os/signal"
 	"path/filepath"
 )
 
@@ -134,5 +135,23 @@ func trySaveState(r *rpn.RPN) {
 		log.Printf("Failed to write %s: %v", path, err)
 	} else {
 		log.Printf("Wrote state snapshot to %s", path)
+	}
+}
+
+type Interrupt struct {
+	sigc chan os.Signal
+}
+
+func (i *Interrupt) Init() {
+	i.sigc = make(chan os.Signal, 1)
+	signal.Notify(i.sigc, os.Interrupt)
+}
+
+func (i *Interrupt) Interrupt() bool {
+	select {
+	case <-i.sigc:
+		return true
+	default:
+		return false
 	}
 }

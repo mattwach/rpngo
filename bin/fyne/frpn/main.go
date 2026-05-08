@@ -22,6 +22,9 @@ func updateFyne(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) {
 }
 
 func interactive(r *rpn.RPN) error {
+	var inter startup.Interrupt
+	inter.Init()
+	r.Interrupt = inter.Interrupt
 	// pack rpn into a channel so it can be shared between the readline and fyne
 	// goroutines.
 	rpnInst := make(chan *rpn.RPN, 1)
