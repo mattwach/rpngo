@@ -2,6 +2,7 @@ package varwin
 
 import (
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"sort"
@@ -35,12 +36,12 @@ func New(win fyne.Window, rpnInst chan *rpn.RPN) *VarWin {
 	vw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(vw.data)
 	vw.showDotCheckbox = widget.NewCheck("show dot", func(b bool) {
-		vw.callWithInstance(func(r *rpn.RPN) {
+		vw.callWithInstance("show dot", func(r *rpn.RPN) {
 			vw.showdot = b
 		})
 	})
 	vw.multilineCheckbox = widget.NewCheck("multiline", func(b bool) {
-		vw.callWithInstance(func(r *rpn.RPN) {
+		vw.callWithInstance("multiline", func(r *rpn.RPN) {
 			vw.multiline = b
 		})
 	})
@@ -143,7 +144,7 @@ func (vw *VarWin) updateMainContext(r *rpn.RPN) {
 	vw.showDotCheckbox.SetChecked(vw.showdot)
 }
 
-func (vw *VarWin) callWithInstance(fn func(r *rpn.RPN)) {
+func (vw *VarWin) callWithInstance(ctx string, fn func(r *rpn.RPN)) {
 	select {
 	case r := <-vw.rpnInst:
 		defer func() {
@@ -152,6 +153,6 @@ func (vw *VarWin) callWithInstance(fn func(r *rpn.RPN)) {
 		fn(r)
 		vw.updateMainContext(r)
 	default:
-		// do nothing
+		log.Printf("%s failed becuase rpn is busy", ctx)
 	}
 }

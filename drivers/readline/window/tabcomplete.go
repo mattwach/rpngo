@@ -26,6 +26,7 @@ func (tc *ReadlineTabComplete) tabCompleteCallback(line string) []string {
 		}()
 		return tc.tabc.FindAllWords(r, line)
 	default:
+		log.Println("tab complete failed because RPN is busy")
 		return nil
 	}
 }

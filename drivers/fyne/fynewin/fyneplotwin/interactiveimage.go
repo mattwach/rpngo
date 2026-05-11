@@ -2,6 +2,7 @@ package fyneplotwin
 
 import (
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
 
@@ -102,6 +103,7 @@ func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
 // Resize satisfies the fyne.Widget interface and is called when the widget is
 // resized.
 func (i *interactiveImage) Resize(size fyne.Size) {
+	log.Printf("Resize %v", size)
 	i.inMainContext = true
 	defer func() {
 		i.inMainContext = false
@@ -121,7 +123,7 @@ func (i *interactiveImage) Resize(size fyne.Size) {
 		i.parent.ResizeWindow(0, 0, int(size.Width), int(size.Height))
 		i.parent.Update(r, false)
 	default:
-		// no action if the rpn instance is not available
+		log.Println("plot resize failed because RPN is busy")
 	}
 }
 
@@ -185,7 +187,7 @@ func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
 		}
 		i.parent.Update(r, true)
 	default:
-		// no action if the rpn instance is not available
+		log.Println("plot scroll failed because RPN is busy")
 	}
 }
 
@@ -216,7 +218,7 @@ func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
 		i.parent.SetProp("maxy", rpn.RealFrame(miny+i.ploth))
 		i.parent.Update(r, true)
 	default:
-		// no action if the rpn instance is not available
+		log.Println("plot drag failed because RPN is busy")
 	}
 }
 
@@ -260,7 +262,7 @@ func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
 		i.posx = ev.Position.X
 		i.posy = ev.Position.Y
 	default:
-		// no action if the rpn instance is not available
+		log.Println("plot magnify failed because RPN is busy")
 	}
 }
 

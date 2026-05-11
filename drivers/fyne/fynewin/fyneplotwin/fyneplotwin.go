@@ -3,6 +3,7 @@ package fyneplotwin
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/customwidget"
@@ -51,12 +52,12 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
 	pw.canvas.parent = parent
 	pw.autoXCheckbox = widget.NewCheck("Auto X", func(b bool) {
-		pw.uiAction(func() {
+		pw.uiAction("autox", func() {
 			pw.canvas.parent.SetProp("autox", rpn.BoolFrame(b))
 		})
 	})
 	pw.autoYCheckbox = widget.NewCheck("Auto Y", func(b bool) {
-		pw.uiAction(func() {
+		pw.uiAction("autoy", func() {
 			pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(b))
 		})
 	})
@@ -184,7 +185,7 @@ func (pw *FynePlotWin) WindowSize() (int, int) {
 }
 
 // call a UI action in the main context and updates the plot window
-func (pw *FynePlotWin) uiAction(fn func()) {
+func (pw *FynePlotWin) uiAction(ctx string, fn func()) {
 	pw.canvas.inMainContext = true
 	defer func() {
 		pw.canvas.inMainContext = false
@@ -197,7 +198,7 @@ func (pw *FynePlotWin) uiAction(fn func()) {
 		fn()
 		pw.canvas.parent.Update(r, true)
 	default:
-		// no action if the rpn instance is not available
+		log.Printf("%s failed because RPN is busy", ctx)
 	}
 }
 
@@ -211,7 +212,7 @@ func (pw *FynePlotWin) updateXMinEntry(s string) {
 			pw.canvas.parent.SetProp("minx", rpn.RealFrame(val))
 		}
 	}
-	pw.uiAction(func() {})
+	pw.uiAction("minx", func() {})
 }
 
 func (pw *FynePlotWin) updateXMaxEntry(s string) {
@@ -223,7 +224,7 @@ func (pw *FynePlotWin) updateXMaxEntry(s string) {
 			pw.canvas.parent.SetProp("maxx", rpn.RealFrame(val))
 		}
 	}
-	pw.uiAction(func() {})
+	pw.uiAction("maxx", func() {})
 }
 
 func (pw *FynePlotWin) updateYMinEntry(s string) {
@@ -232,7 +233,7 @@ func (pw *FynePlotWin) updateYMinEntry(s string) {
 		pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(false))
 		pw.canvas.parent.SetProp("miny", rpn.RealFrame(val))
 	}
-	pw.uiAction(func() {})
+	pw.uiAction("ymin", func() {})
 }
 
 func (pw *FynePlotWin) updateYMaxEntry(s string) {
@@ -241,7 +242,7 @@ func (pw *FynePlotWin) updateYMaxEntry(s string) {
 		pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(false))
 		pw.canvas.parent.SetProp("maxy", rpn.RealFrame(val))
 	}
-	pw.uiAction(func() {})
+	pw.uiAction("ymax", func() {})
 }
 
 // parses and updates the steps entry, then updates the plot window
@@ -250,7 +251,7 @@ func (pw *FynePlotWin) updateStepsEntry(s string) {
 	if err == nil {
 		pw.canvas.parent.SetProp("steps", rpn.IntFrame(val, rpn.INTEGER_FRAME))
 	}
-	pw.uiAction(func() {})
+	pw.uiAction("steps", func() {})
 }
 
 // clearIfNeeded clears the canvas if clearFirst is true. It is used as a

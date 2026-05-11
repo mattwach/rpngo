@@ -2,6 +2,7 @@ package stackwin
 
 import (
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/drivers/fyne/fynewin/customwidget"
 	"strconv"
@@ -127,7 +128,7 @@ func (sw *StackWin) ListProps() []string {
 	return props
 }
 
-func (sw *StackWin) callWithInstance(fn func(r *rpn.RPN)) {
+func (sw *StackWin) callWithInstance(ctx string, fn func(r *rpn.RPN)) {
 	select {
 	case r := <-sw.rpnInst:
 		defer func() {
@@ -136,12 +137,12 @@ func (sw *StackWin) callWithInstance(fn func(r *rpn.RPN)) {
 		fn(r)
 		sw.updateMainContext(r)
 	default:
-		// do nothing
+		log.Printf("%s failed becuase RPN is busy", ctx)
 	}
 }
 
 func (sw *StackWin) updateRoundEntry(s string) {
-	sw.callWithInstance(func(r *rpn.RPN) {
+	sw.callWithInstance("round", func(r *rpn.RPN) {
 		val, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
 			sw.SetProp("round", rpn.IntFrame(val, rpn.INTEGER_FRAME))
@@ -150,13 +151,13 @@ func (sw *StackWin) updateRoundEntry(s string) {
 }
 
 func (sw *StackWin) clearStack() {
-	sw.callWithInstance(func(r *rpn.RPN) {
+	sw.callWithInstance("clear", func(r *rpn.RPN) {
 		r.Frames = r.Frames[:0]
 	})
 }
 
 func (sw *StackWin) copyToClipboard() {
-	sw.callWithInstance(func(r *rpn.RPN) {
+	sw.callWithInstance("copy", func(r *rpn.RPN) {
 		if len(r.Frames) == 0 {
 			return
 		}
