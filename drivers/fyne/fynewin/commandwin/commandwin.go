@@ -10,18 +10,20 @@ import (
 )
 
 type CommandWin struct {
-	rpnInst chan *rpn.RPN
-	win     fyne.Window
-	data    *widget.Entry
-	result  *widget.Entry
+	rpnInst  chan *rpn.RPN
+	win      fyne.Window
+	data     *widget.Entry
+	result   *widget.Entry
+	updateFn func()
 }
 
-func New(win fyne.Window, rpnInst chan *rpn.RPN) *CommandWin {
+func New(win fyne.Window, rpnInst chan *rpn.RPN, updateFn func()) *CommandWin {
 	cw := &CommandWin{
-		rpnInst: rpnInst,
-		win:     win,
-		data:    widget.NewEntry(),
-		result:  widget.NewEntry(),
+		rpnInst:  rpnInst,
+		win:      win,
+		data:     widget.NewEntry(),
+		result:   widget.NewEntry(),
+		updateFn: updateFn,
 	}
 	cw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	cw.data.OnSubmitted = cw.runCommandWithString
@@ -78,29 +80,40 @@ func (cw *CommandWin) ListProps() []string {
 	return nil
 }
 
-func (cw *CommandWin) callWithInstance(fn func(r *rpn.RPN)) {
-	select {
-	case r := <-cw.rpnInst:
-		defer func() {
-			cw.rpnInst <- r
-		}()
-		fn(r)
-	default:
-		// do nothing
-	}
-}
-
 func (cw *CommandWin) runCommandWithString(s string) {
-	cw.callWithInstance(func(r *rpn.RPN) {
-		err := parse.Fields(s, r.Exec)
-		if err != nil {
-			cw.result.SetText("error: " + err.Error())
-		} else if len(r.Frames) > 0 {
-			cw.result.SetText(r.Frames[len(r.Frames)-1].String(true))
-		} else {
-			cw.result.SetText("<stack empty>")
+
+	// This needs to be executed in a separate go routine because 's'
+	// might contain fyne API calls and we are already running within
+	// the main fyne thread.
+	go func() {
+		select {
+		case r := <-cw.rpnInst:
+			defer func() {
+				cw.rpnInst <- r
+			}()
+
+			fyne.Do(func() {
+				cw.data.SetText("")
+			})
+
+			err := parse.Fields(s, r.Exec)
+			s := ""
+			if err != nil {
+				cw.result.SetText("error: " + err.Error())
+			} else if len(r.Frames) > 0 {
+				s = r.Frames[len(r.Frames)-1].String(true)
+			}
+
+			fyne.Do(func() {
+				cw.result.SetText(s)
+			})
+			cw.updateFn()
+		default:
+			fyne.DoAndWait(func() {
+				cw.result.SetText("RPN is busy (break to stop)")
+			})
 		}
-	})
+	}()
 }
 
 func (cw *CommandWin) runCommand() {

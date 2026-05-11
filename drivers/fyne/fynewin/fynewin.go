@@ -136,7 +136,9 @@ func (f *FyneWin) DeleteWindowOrGroup(name string) error {
 	if w == nil {
 		return rpn.ErrNotFound
 	}
-	w.Close()
+	fyne.DoAndWait(func() {
+		w.Close()
+	})
 	delete(f.children, name)
 	return nil
 }
@@ -233,6 +235,8 @@ const wNewCommandHelp = "Creates a new command window"
 
 func (f *FyneWin) wNewCommand(r *rpn.RPN) error {
 	return f.wNew(r, "command", func(w fyne.Window) window.WindowWithProps {
-		return commandwin.New(w, f.rpnInst)
+		return commandwin.New(w, f.rpnInst, func() {
+			f.Update(r, 0, 0, true)
+		})
 	})
 }
