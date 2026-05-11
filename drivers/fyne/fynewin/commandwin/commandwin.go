@@ -10,18 +10,18 @@ import (
 )
 
 type CommandWin struct {
-	rpnInst chan *rpn.RPN
-	win     fyne.Window
-	data    *widget.Entry
-	result  *widget.Entry
+	rpn    *rpn.RPN
+	win    fyne.Window
+	data   *widget.Entry
+	result *widget.Entry
 }
 
-func New(win fyne.Window, rpnInst chan *rpn.RPN) *CommandWin {
+func New(win fyne.Window, r *rpn.RPN) *CommandWin {
 	cw := &CommandWin{
-		rpnInst: rpnInst,
-		win:     win,
-		data:    widget.NewEntry(),
-		result:  widget.NewEntry(),
+		rpn:    r,
+		win:    win,
+		data:   widget.NewEntry(),
+		result: widget.NewEntry(),
 	}
 	cw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	cw.data.OnSubmitted = cw.runCommandWithString
@@ -78,29 +78,15 @@ func (cw *CommandWin) ListProps() []string {
 	return nil
 }
 
-func (cw *CommandWin) callWithInstance(fn func(r *rpn.RPN)) {
-	select {
-	case r := <-cw.rpnInst:
-		defer func() {
-			cw.rpnInst <- r
-		}()
-		fn(r)
-	default:
-		// do nothing
-	}
-}
-
 func (cw *CommandWin) runCommandWithString(s string) {
-	cw.callWithInstance(func(r *rpn.RPN) {
-		err := parse.Fields(s, r.Exec)
-		if err != nil {
-			cw.result.SetText("error: " + err.Error())
-		} else if len(r.Frames) > 0 {
-			cw.result.SetText(r.Frames[len(r.Frames)-1].String(true))
-		} else {
-			cw.result.SetText("<stack empty>")
-		}
-	})
+	err := parse.Fields(s, cw.rpn.Exec)
+	if err != nil {
+		cw.result.SetText("error: " + err.Error())
+	} else if len(cw.rpn.Frames) > 0 {
+		cw.result.SetText(cw.rpn.Frames[len(cw.rpn.Frames)-1].String(true))
+	} else {
+		cw.result.SetText("<stack empty>")
+	}
 }
 
 func (cw *CommandWin) runCommand() {

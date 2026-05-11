@@ -17,13 +17,13 @@ import (
 
 type ReadlineWindow struct {
 	inst       *readline.Instance
-	rpnInst    chan *rpn.RPN
 	showFrames int
 	autofn     []string
+	rpnExec    func(func(*rpn.RPN) error) error
 }
 
-func (rlw *ReadlineWindow) Init(rpnInst chan *rpn.RPN) error {
-	rlw.rpnInst = rpnInst
+func (rlw *ReadlineWindow) Init(rpnExec func(func(*rpn.RPN) error) error) error {
+	rlw.rpnExec = rpnExec
 	rlw.showFrames = 1
 	histFile := startup.HistFile
 	home, err := fileops.HomeDir()
@@ -31,7 +31,7 @@ func (rlw *ReadlineWindow) Init(rpnInst chan *rpn.RPN) error {
 		histFile = filepath.Join(home, startup.HistFile)
 	}
 	var tabc ReadlineTabComplete
-	tabc.Init(rpnInst, &fs.FileOpsDriver{})
+	tabc.Init(rpnExec, &fs.FileOpsDriver{})
 	completer := readline.NewPrefixCompleter(
 		readline.PcItemDynamic(tabc.tabCompleteCallback),
 	)
@@ -53,18 +53,17 @@ func (rlw *ReadlineWindow) ExecLine() error {
 	if err != nil {
 		return err
 	}
-	r := <-rlw.rpnInst
-	defer func() {
-		rlw.rpnInst <- r
-	}()
-	color.Set(color.FgYellow)
-	err = parse.Fields(line, r.Exec)
-	color.Unset()
-	if err != nil {
-		color.Red("%v\n", err)
-	} else {
-		rlw.printFrames(r)
-	}
+	rlw.rpnExec(func(r *rpn.RPN) error {
+		color.Set(color.FgYellow)
+		err = parse.Fields(line, r.Exec)
+		color.Unset()
+		if err != nil {
+			color.Red("%v\n", err)
+		} else {
+			rlw.printFrames(r)
+		}
+		return nil
+	})
 	return nil
 }
 
@@ -72,11 +71,11 @@ func (rlw *ReadlineWindow) autoFn() {
 	if len(rlw.autofn) == 0 {
 		return
 	}
-	r := <-rlw.rpnInst
-	defer func() {
-		rlw.rpnInst <- r
-	}()
-	if err := r.ExecSlice(rlw.autofn); err != nil {
+	err := rlw.rpnExec(func(r *rpn.RPN) error {
+		return r.ExecSlice(rlw.autofn)
+	})
+
+	if err != nil {
 		color.Red("autofn error: %v\n", err)
 	}
 }

@@ -17,22 +17,24 @@ import (
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.
 type StackWin struct {
-	rpnInst    chan *rpn.RPN
+	rpn        *rpn.RPN
 	win        fyne.Window
 	clipboard  fyne.Clipboard
 	data       *widget.Entry
 	round      int8
 	roundEntry *customwidget.CustomEntry
 	copyButton *widget.Button
+	fullUpdate func()
 }
 
-func New(win fyne.Window, clipboard fyne.Clipboard, rpnInst chan *rpn.RPN) *StackWin {
+func New(win fyne.Window, clipboard fyne.Clipboard, r *rpn.RPN, fullUpdate func()) *StackWin {
 	sw := &StackWin{
-		rpnInst:   rpnInst,
-		win:       win,
-		clipboard: clipboard,
-		data:      widget.NewMultiLineEntry(),
-		round:     -1,
+		rpn:        r,
+		win:        win,
+		clipboard:  clipboard,
+		data:       widget.NewMultiLineEntry(),
+		round:      -1,
+		fullUpdate: fullUpdate,
 	}
 	sw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(sw.data)
@@ -43,15 +45,11 @@ func New(win fyne.Window, clipboard fyne.Clipboard, rpnInst chan *rpn.RPN) *Stac
 	bottom := container.NewHBox(roundLabel, sw.roundEntry, clearButton, sw.copyButton)
 	win.SetContent(container.NewBorder(nil, bottom, nil, nil, scroll))
 	win.Resize(fyne.NewSize(240, 640))
+	sw.Update(r, true)
 	return sw
 }
 
 func (sw *StackWin) Update(r *rpn.RPN, force bool) error {
-	fyne.DoAndWait(func() { sw.updateMainContext(r) })
-	return nil
-}
-
-func (sw *StackWin) updateMainContext(r *rpn.RPN) {
 	if len(r.Frames) > 0 {
 		lines := make([]string, 0)
 		for i, f := range r.Frames {
@@ -71,6 +69,7 @@ func (sw *StackWin) updateMainContext(r *rpn.RPN) {
 	} else {
 		sw.copyButton.Disable()
 	}
+	return nil
 }
 
 func (sw *StackWin) ResizeWindow(x, y, w, h int) error {
@@ -127,40 +126,23 @@ func (sw *StackWin) ListProps() []string {
 	return props
 }
 
-func (sw *StackWin) callWithInstance(fn func(r *rpn.RPN)) {
-	select {
-	case r := <-sw.rpnInst:
-		defer func() {
-			sw.rpnInst <- r
-		}()
-		fn(r)
-		sw.updateMainContext(r)
-	default:
-		// do nothing
-	}
-}
-
 func (sw *StackWin) updateRoundEntry(s string) {
-	sw.callWithInstance(func(r *rpn.RPN) {
-		val, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			sw.SetProp("round", rpn.IntFrame(val, rpn.INTEGER_FRAME))
-		}
-	})
+	val, err := strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		sw.SetProp("round", rpn.IntFrame(val, rpn.INTEGER_FRAME))
+	}
+	sw.Update(sw.rpn, true)
 }
 
 func (sw *StackWin) clearStack() {
-	sw.callWithInstance(func(r *rpn.RPN) {
-		r.Frames = r.Frames[:0]
-	})
+	sw.rpn.Frames = sw.rpn.Frames[:0]
+	sw.fullUpdate()
 }
 
 func (sw *StackWin) copyToClipboard() {
-	sw.callWithInstance(func(r *rpn.RPN) {
-		if len(r.Frames) == 0 {
-			return
-		}
-		val := r.Frames[len(r.Frames)-1].RoundedString(sw.round, false)
-		sw.clipboard.SetContent(val)
-	})
+	if len(sw.rpn.Frames) == 0 {
+		return
+	}
+	val := sw.rpn.Frames[len(sw.rpn.Frames)-1].RoundedString(sw.round, false)
+	sw.clipboard.SetContent(val)
 }

@@ -16,19 +16,13 @@ import (
 // and supports mouse actions, such as dragging and scrolling to zoom.
 type interactiveImage struct {
 	widget.BaseWidget
-	// fyne is picky about how you call into it, requiring Do(AndWait) when
-	// calling from a different go routine.
-	inMainContext bool
 	// We use gg to handle the pixel work
 	ggimg *gg.Context
 	image *canvas.Image
 	// PixelPlotWindow (shared with picocalc), handles most of the graphing
 	// logic.
 	parent *plotwin.PixelPlotWindow
-	// rpnInstance is needed when a graph change is initiated by the UI,
-	// such as panning or zooming.  We need to "check out" the RPN instance,
-	// which may not be possible if it is busy.
-	rpnInstance chan *rpn.RPN
+	rpn    *rpn.RPN
 
 	// mouse drag event
 	mouseDown desktop.MouseButton
@@ -50,10 +44,6 @@ type interactiveImage struct {
 
 // CreateRenderer is required to satisfy the fyne.Widget interface.
 func (i *interactiveImage) CreateRenderer() fyne.WidgetRenderer {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
 	return widget.NewSimpleRenderer(i.image)
 }
 
@@ -76,10 +66,6 @@ func (i *interactiveImage) MouseIn(ev *desktop.MouseEvent) {}
 // If the mouse is up, it is treated as a hover event and the coordinates under
 // the cursor are displayed.
 func (i *interactiveImage) MouseMoved(ev *desktop.MouseEvent) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
 	switch i.mouseDown {
 	case desktop.MouseButtonPrimary:
 		i.plotDragged(ev)
@@ -102,27 +88,15 @@ func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
 // Resize satisfies the fyne.Widget interface and is called when the widget is
 // resized.
 func (i *interactiveImage) Resize(size fyne.Size) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
 	i.BaseWidget.Resize(size)
-	if i.parent == nil {
+	if i.parent == nil || size.Width == 0 || size.Height == 0 {
 		return
 	}
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		i.ggimg = gg.NewContext(int(size.Width), int(size.Height))
-		i.image.Image = i.ggimg.Image()
-		i.image.Resize(size)
-		i.parent.ResizeWindow(0, 0, int(size.Width), int(size.Height))
-		i.parent.Update(r, false)
-	default:
-		// no action if the rpn instance is not available
-	}
+	i.ggimg = gg.NewContext(int(size.Width), int(size.Height))
+	i.image.Image = i.ggimg.Image()
+	i.image.Resize(size)
+	i.parent.ResizeWindow(0, 0, int(size.Width), int(size.Height))
+	i.parent.Update(i.rpn, false)
 }
 
 const scrollPercent = 0.25
@@ -143,125 +117,93 @@ func (i *interactiveImage) plotSize() (float64, float64) {
 // user scrolls while the mouse is over the widget. It zooms in or out of the
 // graph depending on the scroll direction.
 func (i *interactiveImage) Scrolled(ev *fyne.ScrollEvent) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		plotw, ploth := i.plotSize()
+	plotw, ploth := i.plotSize()
 
-		if ev.Scrolled.DY > 0 {
-			// zoom in
-			plotw *= (1 - scrollPercent)
-			ploth *= (1 - scrollPercent)
-		} else {
-			// zoom out
-			plotw *= (1 + scrollPercent)
-			ploth *= (1 + scrollPercent)
-		}
-
-		// the goal is to increase the bounds of the plot window while keeping
-		// the point under the cursor fixed
-		xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
-		yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
-		anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
-		minx := anchorX - xoffset
-		if i.isAutoX() {
-			i.parent.SetProp("minv", rpn.RealFrame(minx))
-			i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
-		} else {
-			i.parent.SetProp("minx", rpn.RealFrame(minx))
-			i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
-		}
-		autoy, _ := i.parent.GetProp("autoy")
-		if !autoy.UnsafeBool() {
-			miny := anchorY - yoffset
-			i.parent.SetProp("miny", rpn.RealFrame(miny))
-			i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
-		}
-		i.parent.Update(r, true)
-	default:
-		// no action if the rpn instance is not available
+	if ev.Scrolled.DY > 0 {
+		// zoom in
+		plotw *= (1 - scrollPercent)
+		ploth *= (1 - scrollPercent)
+	} else {
+		// zoom out
+		plotw *= (1 + scrollPercent)
+		ploth *= (1 + scrollPercent)
 	}
+
+	// the goal is to increase the bounds of the plot window while keeping
+	// the point under the cursor fixed
+	xoffset := plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
+	yoffset := ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
+	anchorX, anchorY := i.parent.PixelToCoord(int(ev.Position.X), int(ev.Position.Y))
+	minx := anchorX - xoffset
+	if i.isAutoX() {
+		i.parent.SetProp("minv", rpn.RealFrame(minx))
+		i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
+	} else {
+		i.parent.SetProp("minx", rpn.RealFrame(minx))
+		i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
+	}
+	autoy, _ := i.parent.GetProp("autoy")
+	if !autoy.UnsafeBool() {
+		miny := anchorY - yoffset
+		i.parent.SetProp("miny", rpn.RealFrame(miny))
+		i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
+	}
+	i.parent.Update(i.rpn, true)
 }
 
 // plotDragged handles mouse movement events that occur while the mouse
 // is down, which are treated as part of a drag event. It pans the graph so that
 // the point under the cursor remains fixed at the anchor point.
 func (i *interactiveImage) plotDragged(ev *desktop.MouseEvent) {
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		// The goal is to set minx, maxv, miny, maxy so that the point
-		// under the cursor is still at anchorX, anchorY
-		xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
-		yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
-		minx := i.anchorX - xoffset
-		if i.isAutoX() {
-			i.parent.SetProp("minv", rpn.RealFrame(minx))
-			i.parent.SetProp("maxv", rpn.RealFrame(minx+i.plotw))
-		} else {
-			i.parent.SetProp("minx", rpn.RealFrame(minx))
-			i.parent.SetProp("maxx", rpn.RealFrame(minx+i.plotw))
-		}
-		i.parent.SetProp("autoy", rpn.BoolFrame(false))
-		miny := i.anchorY - yoffset
-		i.parent.SetProp("miny", rpn.RealFrame(miny))
-		i.parent.SetProp("maxy", rpn.RealFrame(miny+i.ploth))
-		i.parent.Update(r, true)
-	default:
-		// no action if the rpn instance is not available
+	// The goal is to set minx, maxv, miny, maxy so that the point
+	// under the cursor is still at anchorX, anchorY
+	xoffset := i.plotw * float64(ev.Position.X) / float64(i.ggimg.Width())
+	yoffset := i.ploth * (float64(i.ggimg.Height()) - float64(ev.Position.Y)) / float64(i.ggimg.Height())
+	minx := i.anchorX - xoffset
+	if i.isAutoX() {
+		i.parent.SetProp("minv", rpn.RealFrame(minx))
+		i.parent.SetProp("maxv", rpn.RealFrame(minx+i.plotw))
+	} else {
+		i.parent.SetProp("minx", rpn.RealFrame(minx))
+		i.parent.SetProp("maxx", rpn.RealFrame(minx+i.plotw))
 	}
+	i.parent.SetProp("autoy", rpn.BoolFrame(false))
+	miny := i.anchorY - yoffset
+	i.parent.SetProp("miny", rpn.RealFrame(miny))
+	i.parent.SetProp("maxy", rpn.RealFrame(miny+i.ploth))
+	i.parent.Update(i.rpn, true)
 }
 
 const magnifyFactor = 1.5
 
 func (i *interactiveImage) magnify(ev *desktop.MouseEvent) {
-	i.inMainContext = true
-	defer func() {
-		i.inMainContext = false
-	}()
-	select {
-	case r := <-i.rpnInstance:
-		defer func() {
-			i.rpnInstance <- r
-		}()
-		plotw, ploth := i.plotSize()
+	plotw, ploth := i.plotSize()
 
-		xscale := (ev.Position.X - i.posx) / float32(i.ggimg.Width()) * magnifyFactor
-		plotw *= (1 - float64(xscale))
+	xscale := (ev.Position.X - i.posx) / float32(i.ggimg.Width()) * magnifyFactor
+	plotw *= (1 - float64(xscale))
 
-		yscale := (ev.Position.Y - i.posy) / float32(i.ggimg.Height()) * magnifyFactor
-		ploth *= (1 + float64(yscale))
+	yscale := (ev.Position.Y - i.posy) / float32(i.ggimg.Height()) * magnifyFactor
+	ploth *= (1 + float64(yscale))
 
-		// the goal is to increase the bounds of the plot window while keeping
-		// the point under the cursor fixed
-		xoffset := plotw * float64(i.posx) / float64(i.ggimg.Width())
-		yoffset := ploth * (float64(i.ggimg.Height()) - float64(i.posy)) / float64(i.ggimg.Height())
-		minx := i.anchorX - xoffset
-		if i.isAutoX() {
-			i.parent.SetProp("minv", rpn.RealFrame(minx))
-			i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
-		} else {
-			i.parent.SetProp("minx", rpn.RealFrame(minx))
-			i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
-		}
-		i.parent.SetProp("autoy", rpn.BoolFrame(false))
-		miny := i.anchorY - yoffset
-		i.parent.SetProp("miny", rpn.RealFrame(miny))
-		i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
-		i.parent.Update(r, true)
-		i.posx = ev.Position.X
-		i.posy = ev.Position.Y
-	default:
-		// no action if the rpn instance is not available
+	// the goal is to increase the bounds of the plot window while keeping
+	// the point under the cursor fixed
+	xoffset := plotw * float64(i.posx) / float64(i.ggimg.Width())
+	yoffset := ploth * (float64(i.ggimg.Height()) - float64(i.posy)) / float64(i.ggimg.Height())
+	minx := i.anchorX - xoffset
+	if i.isAutoX() {
+		i.parent.SetProp("minv", rpn.RealFrame(minx))
+		i.parent.SetProp("maxv", rpn.RealFrame(minx+plotw))
+	} else {
+		i.parent.SetProp("minx", rpn.RealFrame(minx))
+		i.parent.SetProp("maxx", rpn.RealFrame(minx+plotw))
 	}
+	i.parent.SetProp("autoy", rpn.BoolFrame(false))
+	miny := i.anchorY - yoffset
+	i.parent.SetProp("miny", rpn.RealFrame(miny))
+	i.parent.SetProp("maxy", rpn.RealFrame(miny+ploth))
+	i.parent.Update(i.rpn, true)
+	i.posx = ev.Position.X
+	i.posy = ev.Position.Y
 }
 
 // drawPointerCoordinates handles mouse movement events that occur while the mouse

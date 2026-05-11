@@ -1,7 +1,6 @@
 package window
 
 import (
-	"log"
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/tabcomplete"
@@ -9,23 +8,20 @@ import (
 
 type ReadlineTabComplete struct {
 	tabc    tabcomplete.TabComplete
-	rpnChan chan *rpn.RPN
+	rpnExec func(func(*rpn.RPN) error) error
 }
 
-func (tc *ReadlineTabComplete) Init(rpnChan chan *rpn.RPN, fs fileops.FileOpsDriver) {
+func (tc *ReadlineTabComplete) Init(rpnExec func(func(*rpn.RPN) error) error, fs fileops.FileOpsDriver) {
 	tc.tabc.Init(fs)
-	tc.rpnChan = rpnChan
+	tc.rpnExec = rpnExec
 }
 
 func (tc *ReadlineTabComplete) tabCompleteCallback(line string) []string {
-	log.Printf("tab complete callback called with line: %s", line)
-	select {
-	case r := <-tc.rpnChan:
-		defer func() {
-			tc.rpnChan <- r
-		}()
-		return tc.tabc.FindAllWords(r, line)
-	default:
+
+	var words []string
+	tc.rpnExec(func(r *rpn.RPN) error {
+		words = tc.tabc.FindAllWords(r, line)
 		return nil
-	}
+	})
+	return words
 }

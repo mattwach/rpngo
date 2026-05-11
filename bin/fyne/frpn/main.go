@@ -13,30 +13,7 @@ import (
 	"os"
 )
 
-func updateFyne(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) {
-	r := <-rpnInst
-	defer func() {
-		rpnInst <- r
-	}()
-	fw.Update(r, 0, 0, true)
-}
-
-func interactive(r *rpn.RPN) error {
-	var inter startup.Interrupt
-	inter.Init()
-	r.Interrupt = inter.Interrupt
-	// pack rpn into a channel so it can be shared between the readline and fyne
-	// goroutines.
-	rpnInst := make(chan *rpn.RPN, 1)
-	rpnInst <- r
-	return interactiveChannel(rpnInst)
-}
-
-func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
-	r := <-rpnInst
-	defer func() {
-		rpnInst <- r
-	}()
+func initRPN(r *rpn.RPN, fw *fynewin.FyneWin) error {
 	_ = commands.InitWindowManagerCommands(r, fw)
 	_ = plotwin.InitPlotCommands(r, fw, nil)
 	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
@@ -45,17 +22,20 @@ func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
 	return nil
 }
 
-func interactiveChannel(rpnInst chan *rpn.RPN) error {
+func interactive(r *rpn.RPN) error {
+	var inter startup.Interrupt
+	inter.Init()
+	r.Interrupt = inter.Interrupt
+	fw := fynewin.FyneWin{}
+	fw.Init(r)
 	var rlw window.ReadlineWindow
-	if err := rlw.Init(rpnInst); err != nil {
+	if err := rlw.Init(fw.ExecRPN); err != nil {
 		return err
 	}
 	defer rlw.Close()
-	fw := fynewin.FyneWin{}
-	fw.Register(rpnInst)
 	fw.AddChild("i", &rlw, nil)
 
-	if err := initRPN(rpnInst, &fw); err != nil {
+	if err := initRPN(r, &fw); err != nil {
 		return err
 	}
 	go func() {
@@ -63,7 +43,6 @@ func interactiveChannel(rpnInst chan *rpn.RPN) error {
 			if err := rlw.ExecLine(); err != nil {
 				break
 			}
-			updateFyne(rpnInst, &fw)
 		}
 
 		fw.Shutdown()

@@ -17,7 +17,7 @@ import (
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.
 type VarWin struct {
-	rpnInst           chan *rpn.RPN
+	rpn               *rpn.RPN
 	win               fyne.Window
 	data              *widget.Entry
 	showdot           bool
@@ -26,33 +26,27 @@ type VarWin struct {
 	multilineCheckbox *widget.Check
 }
 
-func New(win fyne.Window, rpnInst chan *rpn.RPN) *VarWin {
+func New(win fyne.Window, r *rpn.RPN) *VarWin {
 	vw := &VarWin{
-		rpnInst: rpnInst,
-		win:     win,
-		data:    widget.NewMultiLineEntry(),
+		rpn:  r,
+		win:  win,
+		data: widget.NewMultiLineEntry(),
 	}
 	vw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	scroll := container.NewScroll(vw.data)
 	vw.showDotCheckbox = widget.NewCheck("show dot", func(b bool) {
-		vw.callWithInstance(func(r *rpn.RPN) {
-			vw.showdot = b
-		})
+		vw.showdot = b
+		vw.Update(vw.rpn, true)
 	})
 	vw.multilineCheckbox = widget.NewCheck("multiline", func(b bool) {
-		vw.callWithInstance(func(r *rpn.RPN) {
-			vw.multiline = b
-		})
+		vw.multiline = b
+		vw.Update(vw.rpn, true)
 	})
 	bottom := container.NewHBox(vw.showDotCheckbox, vw.multilineCheckbox)
 	win.SetContent(container.NewBorder(nil, bottom, nil, nil, scroll))
 	win.Resize(fyne.NewSize(640, 800))
+	vw.Update(r, true)
 	return vw
-}
-
-func (vw *VarWin) Update(r *rpn.RPN, force bool) error {
-	fyne.DoAndWait(func() { vw.updateMainContext(r) })
-	return nil
 }
 
 func (vw *VarWin) ResizeWindow(x, y, w, h int) error {
@@ -119,7 +113,7 @@ func (vw *VarWin) ListProps() []string {
 
 const maxLineLength = 256
 
-func (vw *VarWin) updateMainContext(r *rpn.RPN) {
+func (vw *VarWin) Update(r *rpn.RPN, force bool) error {
 	names := r.AppendAllVariableNames(nil)
 	if len(names) > 0 {
 		sort.Strings(names)
@@ -141,17 +135,5 @@ func (vw *VarWin) updateMainContext(r *rpn.RPN) {
 	}
 	vw.multilineCheckbox.SetChecked(vw.multiline)
 	vw.showDotCheckbox.SetChecked(vw.showdot)
-}
-
-func (vw *VarWin) callWithInstance(fn func(r *rpn.RPN)) {
-	select {
-	case r := <-vw.rpnInst:
-		defer func() {
-			vw.rpnInst <- r
-		}()
-		fn(r)
-		vw.updateMainContext(r)
-	default:
-		// do nothing
-	}
+	return nil
 }

@@ -31,27 +31,30 @@ type child struct {
 }
 
 type FyneWin struct {
-	wait     chan bool
-	ready    chan bool
-	rpnInst  chan *rpn.RPN
 	fapp     fyne.App
 	children map[string]child
+	rpn      *rpn.RPN
 }
 
-func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
+func (f *FyneWin) Init(r *rpn.RPN) {
+	f.rpn = r
 	if f.children == nil {
 		f.children = make(map[string]child)
 	}
-	f.rpnInst = rpnInst
-	r := <-f.rpnInst
-	defer func() {
-		f.rpnInst <- r
-	}()
 	common.RegisterConceptHelp(r, false)
 	r.Register("w.new.command", f.wNewCommand, rpn.CatWindow, wNewCommandHelp)
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", f.wNewVar, rpn.CatWindow, common.WNewVarHelp)
+}
+
+func (f *FyneWin) ExecRPN(fn func(r *rpn.RPN) error) error {
+	var err error
+	fyne.DoAndWait(func() {
+		err = fn(f.rpn)
+		f.Update(f.rpn, 0, 0, true)
+	})
+	return err
 }
 
 func (f *FyneWin) AddChild(name string, wprops window.WindowWithProps, win fyne.Window) error {
@@ -73,15 +76,6 @@ func (f *FyneWin) AddChild(name string, wprops window.WindowWithProps, win fyne.
 // is to have the main routine block on a channel until the
 // time an initial window is created.
 func (f *FyneWin) Run() {
-	f.wait = make(chan bool, 1)
-	f.ready = make(chan bool, 1)
-	log.Printf("fyne idle")
-	start := <-f.wait
-	if !start {
-		// fyne was never needed
-		return
-	}
-
 	log.Printf("fyne starting")
 	f.fapp = app.New()
 	f.fapp.Settings().SetTheme(theme.DarkTheme())
@@ -89,16 +83,12 @@ func (f *FyneWin) Run() {
 	// need to create a fyne window and hide it or it will kill rpngo
 	// when all windows are cleared
 	f.fapp.NewWindow("hidden")
-	f.ready <- true
 	f.fapp.Run()
 }
 
 // Note that sw, sh and updateInput are for interface compatibility with
 // with plotwin.WindowManager interface
 func (f *FyneWin) Update(r *rpn.RPN, sw, sh int, updateInput bool) error {
-	if f.fapp == nil {
-		return nil
-	}
 	var err error
 	for _, c := range f.children {
 		err = c.wprops.Update(r, true)
@@ -169,23 +159,10 @@ func pad(r *rpn.RPN, indent int) {
 	}
 }
 
-func (f *FyneWin) makeReady() {
-	if f.fapp == nil {
-		log.Printf("signal fyne start")
-		f.wait <- true
-		<-f.ready
-	}
-}
-
 func (f *FyneWin) Shutdown() {
-	if f.fapp == nil {
-		f.wait <- false
-		return
-	}
 	fyne.DoAndWait(func() {
 		f.fapp.Quit()
 	})
-	f.fapp = nil
 }
 
 func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) window.WindowWithProps) error {
@@ -197,34 +174,38 @@ func (f *FyneWin) wNew(r *rpn.RPN, prefix string, prepare func(fyne.Window) wind
 	if ok {
 		return rpn.ErrWindowAlreadyExists
 	}
-	f.makeReady()
-	fyne.DoAndWait(func() {
-		w := f.fapp.NewWindow(prefix + ": " + name)
-		w.SetOnClosed(func() {
-			delete(f.children, name)
-		})
-		f.children[name] = child{prepare(w), w}
-		w.Show()
+	w := f.fapp.NewWindow(prefix + ": " + name)
+	w.SetOnClosed(func() {
+		delete(f.children, name)
 	})
+	f.children[name] = child{prepare(w), w}
+	w.Show()
 	return nil
 }
 
 func (f *FyneWin) wNewStack(r *rpn.RPN) error {
 	return f.wNew(r, "stack", func(w fyne.Window) window.WindowWithProps {
-		return stackwin.New(w, f.fapp.Clipboard(), f.rpnInst)
+		return stackwin.New(w, f.fapp.Clipboard(), f.rpn, func() {
+			f.Update(r, 0, 0, true)
+		})
 	})
 }
 
 func (f *FyneWin) wNewVar(r *rpn.RPN) error {
 	return f.wNew(r, "var", func(w fyne.Window) window.WindowWithProps {
-		return varwin.New(w, f.rpnInst)
+		return varwin.New(w, f.rpn)
 	})
 }
 
 func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 	return f.wNew(r, "plot", func(w fyne.Window) window.WindowWithProps {
+		fpw := &fyneplotwin.FynePlotWin{}
 		ppw := &plotwin.PixelPlotWindow{}
-		ppw.Init(fyneplotwin.New(w, f.rpnInst, ppw), 4096)
+		// There is a cross-dependency between pixelplotwindow and
+		// fyneplotwindow, sort of. The PixelPlotWindow -> FynePlotWin connectiom
+		// is via a window.PixelWindow interface.
+		ppw.Init(fpw, 4096)
+		fpw.Init(w, f.rpn, ppw)
 		return ppw
 	})
 }
@@ -233,6 +214,6 @@ const wNewCommandHelp = "Creates a new command window"
 
 func (f *FyneWin) wNewCommand(r *rpn.RPN) error {
 	return f.wNew(r, "command", func(w fyne.Window) window.WindowWithProps {
-		return commandwin.New(w, f.rpnInst)
+		return commandwin.New(w, f.rpn)
 	})
 }
