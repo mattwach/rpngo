@@ -13,6 +13,7 @@ import (
 	"mattwach/rpngo/common/window"
 	"mattwach/rpngo/common/window/common"
 	"mattwach/rpngo/common/window/plotwin"
+	"mattwach/rpngo/drivers/fyne/fynewin/commandwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/fyneplotwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/stackwin"
 	"mattwach/rpngo/drivers/fyne/fynewin/varwin"
@@ -47,6 +48,7 @@ func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
 		f.rpnInst <- r
 	}()
 	common.RegisterConceptHelp(r, false)
+	r.Register("w.new.command", f.wNewCommand, rpn.CatWindow, wNewCommandHelp)
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", f.wNewVar, rpn.CatWindow, common.WNewVarHelp)
@@ -224,5 +226,13 @@ func (f *FyneWin) wNewPlot(r *rpn.RPN) error {
 		ppw := &plotwin.PixelPlotWindow{}
 		ppw.Init(fyneplotwin.New(w, f.rpnInst, ppw), 4096)
 		return ppw
+	})
+}
+
+const wNewCommandHelp = "Creates a new command window"
+
+func (f *FyneWin) wNewCommand(r *rpn.RPN) error {
+	return f.wNew(r, "command", func(w fyne.Window) window.WindowWithProps {
+		return commandwin.New(w, f.rpnInst)
 	})
 }
