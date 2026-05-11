@@ -103,7 +103,6 @@ func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
 // Resize satisfies the fyne.Widget interface and is called when the widget is
 // resized.
 func (i *interactiveImage) Resize(size fyne.Size) {
-	log.Printf("Resize %v", size)
 	i.inMainContext = true
 	defer func() {
 		i.inMainContext = false
