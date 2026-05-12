@@ -53,17 +53,21 @@ func (rlw *ReadlineWindow) ExecLine() error {
 	if err != nil {
 		return err
 	}
-	r := <-rlw.rpnInst
-	defer func() {
-		rlw.rpnInst <- r
-	}()
-	color.Set(color.FgYellow)
-	err = parse.Fields(line, r.Exec)
-	color.Unset()
-	if err != nil {
-		color.Red("%v\n", err)
-	} else {
-		rlw.printFrames(r)
+	select {
+	case r := <-rlw.rpnInst:
+		defer func() {
+			rlw.rpnInst <- r
+		}()
+		color.Set(color.FgYellow)
+		err = parse.Fields(line, r.Exec)
+		color.Unset()
+		if err != nil {
+			color.Red("%v\n", err)
+		} else {
+			rlw.printFrames(r)
+		}
+	default:
+		color.Red("RPN is currently busy\n")
 	}
 	return nil
 }
