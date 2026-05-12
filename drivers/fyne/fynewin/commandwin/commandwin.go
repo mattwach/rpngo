@@ -3,6 +3,7 @@ package commandwin
 import (
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/startup"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,20 +11,26 @@ import (
 )
 
 type CommandWin struct {
-	rpnInst  chan *rpn.RPN
-	win      fyne.Window
-	data     *widget.Entry
-	result   *widget.Entry
-	updateFn func()
+	rpnInst   chan *rpn.RPN
+	win       fyne.Window
+	data      *widget.Entry
+	result    *widget.Entry
+	interrupt *startup.Interrupt
+	updateFn  func()
 }
 
-func New(win fyne.Window, rpnInst chan *rpn.RPN, updateFn func()) *CommandWin {
+func New(
+	win fyne.Window,
+	rpnInst chan *rpn.RPN,
+	interrupt *startup.Interrupt,
+	updateFn func()) *CommandWin {
 	cw := &CommandWin{
-		rpnInst:  rpnInst,
-		win:      win,
-		data:     widget.NewEntry(),
-		result:   widget.NewEntry(),
-		updateFn: updateFn,
+		rpnInst:   rpnInst,
+		win:       win,
+		data:      widget.NewEntry(),
+		result:    widget.NewEntry(),
+		interrupt: interrupt,
+		updateFn:  updateFn,
 	}
 	cw.data.TextStyle = fyne.TextStyle{Monospace: true}
 	cw.data.OnSubmitted = cw.runCommandWithString
@@ -121,5 +128,5 @@ func (cw *CommandWin) runCommand() {
 }
 
 func (cw *CommandWin) breakPressed() {
-
+	cw.interrupt.Signal()
 }

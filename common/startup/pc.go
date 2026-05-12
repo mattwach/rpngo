@@ -143,6 +143,7 @@ type Interrupt struct {
 }
 
 func (i *Interrupt) Init() {
+	log.Println("interrupt init called")
 	i.sigc = make(chan os.Signal, 1)
 	signal.Notify(i.sigc, os.Interrupt)
 }
@@ -153,5 +154,14 @@ func (i *Interrupt) Interrupt() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func (i *Interrupt) Signal() {
+	select {
+	case i.sigc <- os.Interrupt:
+		log.Println("Sending break")
+	default:
+		log.Println("Cant send break")
 	}
 }

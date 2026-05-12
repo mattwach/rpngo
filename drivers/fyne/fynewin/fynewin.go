@@ -10,6 +10,7 @@ package fynewin
 import (
 	"log"
 	"mattwach/rpngo/common/rpn"
+	"mattwach/rpngo/common/startup"
 	"mattwach/rpngo/common/window"
 	"mattwach/rpngo/common/window/common"
 	"mattwach/rpngo/common/window/plotwin"
@@ -31,18 +32,20 @@ type child struct {
 }
 
 type FyneWin struct {
-	wait     chan bool
-	ready    chan bool
-	rpnInst  chan *rpn.RPN
-	fapp     fyne.App
-	children map[string]child
+	wait      chan bool
+	ready     chan bool
+	rpnInst   chan *rpn.RPN
+	interrupt *startup.Interrupt
+	fapp      fyne.App
+	children  map[string]child
 }
 
-func (f *FyneWin) Register(rpnInst chan *rpn.RPN) {
+func (f *FyneWin) Init(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) {
 	if f.children == nil {
 		f.children = make(map[string]child)
 	}
 	f.rpnInst = rpnInst
+	f.interrupt = interrupt
 	r := <-f.rpnInst
 	defer func() {
 		f.rpnInst <- r
@@ -235,7 +238,7 @@ const wNewCommandHelp = "Creates a new command window"
 
 func (f *FyneWin) wNewCommand(r *rpn.RPN) error {
 	return f.wNew(r, "command", func(w fyne.Window) window.WindowWithProps {
-		return commandwin.New(w, f.rpnInst, func() {
+		return commandwin.New(w, f.rpnInst, f.interrupt, func() {
 			f.Update(r, 0, 0, true)
 		})
 	})

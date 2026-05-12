@@ -552,6 +552,7 @@ The `rpngo` program supports several window types:
 - Stack
 - Variables
 - Plot
+- Command Window (frpn only)
 
 Of the above, only the input is required.  For the others,
 you can have zero or more of them.  For example, if you
@@ -836,6 +837,9 @@ represents no rounding).
 - `multiline`: If true, then string that expand multiple lines will
   consume multiple lines in the variable window.
 
+### Command Window Properties
+
+Currently, the `frpn` command window has no settable properties.
 
 ## Plotting
 
@@ -1447,11 +1451,21 @@ modified version of it.
 You can type Ctrl-C in most builds of RPNGO to interrupt a running program.
 
 An exception is `frpn`: When a UI window has been opened, ctrl-C will actually
-kill RPNGO, sometimes with an panic. This is a bug that occurs becuase Fyne
+kill RPNGO, sometimes with an panic. This is a bug that occurs because Fyne
 captures and acts on Ctrl-C signals in a way that can not be stopped (I tried).
 Putting the terminal in "raw" mode is a potential future work-around but it's
-not implemented yet due to the complexity.  A workaround that usually works is
-to close the active fyne window.
+not implemented yet due to the complexity.
+
+To work-around the issue, you can issue `'c' w.new.command`.  This will give
+you a window that has a `break` button you can click to halt the program
+as-needed.  This command can be added to several files to streamline the
+creation:
+
+- Add it to `.rpngo` to have it appear or startup
+- Alternatively, change `.rpngo` `.plotinit` to something like:
+  `{{'c' w.new.command} {0/} try $.plotwin w.new.plot} .plotinit=`.  This
+  will try to create a command window before creating a plot window with
+  a graceful skip if the window already exists.
 
 ### Other Programming Notes
 

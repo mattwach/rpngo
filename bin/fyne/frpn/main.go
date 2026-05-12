@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/drivers/posix/fs"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
@@ -24,12 +25,13 @@ func updateFyne(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) {
 func interactive(r *rpn.RPN) error {
 	var inter startup.Interrupt
 	inter.Init()
+	log.Printf("inter is %d", &inter)
 	r.Interrupt = inter.Interrupt
 	// pack rpn into a channel so it can be shared between the readline and fyne
 	// goroutines.
 	rpnInst := make(chan *rpn.RPN, 1)
 	rpnInst <- r
-	return interactiveChannel(rpnInst)
+	return interactiveChannel(rpnInst, &inter)
 }
 
 func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
@@ -45,14 +47,14 @@ func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
 	return nil
 }
 
-func interactiveChannel(rpnInst chan *rpn.RPN) error {
+func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) error {
 	var rlw window.ReadlineWindow
 	if err := rlw.Init(rpnInst); err != nil {
 		return err
 	}
 	defer rlw.Close()
 	fw := fynewin.FyneWin{}
-	fw.Register(rpnInst)
+	fw.Init(rpnInst, interrupt)
 	fw.AddChild("i", &rlw, nil)
 
 	if err := initRPN(rpnInst, &fw); err != nil {
