@@ -396,6 +396,8 @@ On Picocalc, the following are also defined:
 - `.f5` Saves command history
 - `.f6` Resets the calculator 
 
+Note: `frpn` currently does not support function keys.
+
 ### Number Bases
 
 Many type of numbers are supported

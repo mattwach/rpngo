@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"mattwach/rpngo/common/drivers/posix/fs"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
@@ -25,7 +24,6 @@ func updateFyne(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) {
 func interactive(r *rpn.RPN) error {
 	var inter startup.Interrupt
 	inter.Init()
-	log.Printf("inter is %d", &inter)
 	r.Interrupt = inter.Interrupt
 	// pack rpn into a channel so it can be shared between the readline and fyne
 	// goroutines.
