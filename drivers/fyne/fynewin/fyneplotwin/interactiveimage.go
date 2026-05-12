@@ -2,8 +2,10 @@ package fyneplotwin
 
 import (
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window/plotwin"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -83,6 +85,27 @@ func (i *interactiveImage) MouseOut() {}
 // MouseUp captures the end of a mouse drag event.
 func (i *interactiveImage) MouseUp(ev *desktop.MouseEvent) {
 	i.mouseDown = 0
+}
+
+// Note, this is debug code to try and understand the failure to update the plot
+// better.
+func (i *interactiveImage) Refresh() {
+	log.Println("interactivecimage refresh")
+	i.image.Image = i.ggimg.Image() // Ensure the canvas image is current
+	t := time.Now().UnixMicro()
+	s := fmt.Sprintf("(%v)", t)
+	w, h := i.ggimg.MeasureString(s)
+	i.ggimg.SetRGB(0, 0, 0)
+	i.ggimg.DrawRectangle(50, 50, w+50, h)
+	i.ggimg.Fill()
+	i.ggimg.SetRGB(1, 1, 1)
+	i.ggimg.DrawString(s, 50, 50+h)
+	i.BaseWidget.Refresh()
+	i.image.Refresh()
+	// Force immediate redraw of the canvas
+	if i.image.Resource != nil {
+		canvas.NewImageFromImage(i.ggimg.Image()).Refresh()
+	}
 }
 
 // Resize satisfies the fyne.Widget interface and is called when the widget is

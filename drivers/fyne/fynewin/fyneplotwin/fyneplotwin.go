@@ -44,6 +44,7 @@ func (pw *FynePlotWin) Init(win fyne.Window, r *rpn.RPN, parent *plotwin.PixelPl
 	pw.win.Resize(fyne.NewSize(1024, 768))
 
 	winSize := pw.win.Canvas().Size()
+	pw.canvas.ExtendBaseWidget(&pw.canvas)
 	pw.canvas.rpn = r
 	pw.canvas.ggimg = gg.NewContext(int(winSize.Width), int(winSize.Height))
 	pw.canvas.image = canvas.NewImageFromImage(pw.canvas.ggimg.Image())
@@ -128,7 +129,7 @@ func (pw *FynePlotWin) Refresh() {
 	pw.steps.SetText(fmt.Sprintf("%d", steps.UnsafeInt()))
 	// clear the next time drawing is started
 	pw.clearFirst = true
-	pw.canvas.image.Refresh()
+	pw.canvas.Refresh()
 }
 
 // ResizeWindow implements the window/WindowBase interface.
