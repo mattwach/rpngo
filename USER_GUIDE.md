@@ -396,7 +396,15 @@ On Picocalc, the following are also defined:
 - `.f5` Saves command history
 - `.f6` Resets the calculator 
 
-Note: `frpn` currently does not support function keys.
+Note: `frpn` currently does not support function keys.  Instead, you can create
+a custom command window with `w.new.command` as documented later.  Here is
+a quick example:
+
+```
+'c' w.new.command
+'c' 'b.pi' {3.141592653589793} w.setp
+'c' 'b.stack' {'s' w,new.stack} w.setp
+```
 
 ### Number Bases
 
@@ -841,7 +849,31 @@ represents no rounding).
 
 ### Command Window Properties
 
-Currently, the `frpn` command window has no settable properties.
+The command window lets you define custom buttons.  Here is an example:
+
+```
+'c' w.new.command
+'c' 'b.pi' {3.141592653589793} w.setp
+'c' 'b.stack' {'s' w.new.stack} w.setp
+'c' 'b.vars' {'v' w.new.var} w.setp
+```
+
+![command window](img/command_window.png)
+
+Buttons are displayed in sorted variable order.  You can insert an extra
+dot argument to change the order.  For example
+
+```
+'c' 'b.zzz.e' {2.718281828459045} w.setp
+```
+
+![command window](img/command_window2.png)
+
+If you want to remove a button, set it's command value to an empty string.
+
+```
+'c' 'b.zzz.e' {} w.setp
+```
 
 ## Plotting
 

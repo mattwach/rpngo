@@ -4,9 +4,12 @@ import (
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
+	"sort"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -16,6 +19,8 @@ type CommandWin struct {
 	data      *widget.Entry
 	result    *widget.Entry
 	interrupt *startup.Interrupt
+	buttons   map[string]string
+	vBox      *fyne.Container
 	updateFn  func()
 }
 
@@ -30,6 +35,7 @@ func New(
 		data:      widget.NewEntry(),
 		result:    widget.NewEntry(),
 		interrupt: interrupt,
+		buttons:   make(map[string]string),
 		updateFn:  updateFn,
 	}
 	cw.data.TextStyle = fyne.TextStyle{Monospace: true}
@@ -37,12 +43,11 @@ func New(
 	submitButton := widget.NewButton("run", cw.runCommand)
 	entryBox := container.NewBorder(nil, nil, nil, submitButton, cw.data)
 
-	cw.result.SetPlaceHolder("<results appear here>")
+	cw.result.SetText("<results appear here>")
 
-	breakButton := widget.NewButton("break", cw.breakPressed)
-	commandBox := container.NewHBox(breakButton)
-
-	win.SetContent(container.NewVBox(cw.result, entryBox, commandBox))
+	cw.vBox = container.NewVBox(cw.result, entryBox)
+	cw.layoutButtons(false)
+	win.SetContent(cw.vBox)
 	win.Resize(fyne.NewSize(640, 0))
 	return cw
 }
@@ -76,15 +81,75 @@ func (cw *CommandWin) Type() string {
 }
 
 func (cw *CommandWin) SetProp(name string, val rpn.Frame) error {
-	return rpn.ErrUnknownProperty
+	if !strings.HasPrefix(name, "b.") {
+		return rpn.ErrUnknownProperty
+	}
+	vstr := val.String(false)
+	if vstr == "" {
+		delete(cw.buttons, name)
+	} else {
+		cw.buttons[name] = val.String(false)
+	}
+	cw.layoutButtons(true)
+	return nil
 }
 
 func (cw *CommandWin) GetProp(name string) (rpn.Frame, error) {
+	command, ok := cw.buttons[name]
+	if ok {
+		return rpn.StringFrame(command, rpn.STRING_BRACE_FRAME), nil
+	}
 	return rpn.Frame{}, rpn.ErrUnknownProperty
 }
 
+func (cw *CommandWin) layoutButtons(removeExisting bool) {
+	names := append([]string{"break"}, cw.ListProps()...)
+	layout := container.NewGridWrap(maxBounds(names), widget.NewButton("break", cw.breakPressed))
+	for _, name := range names[1:] {
+		layout.Add(widget.NewButton(buttonName(name), func() {
+			cw.runCommandWithString(cw.buttons[name])
+		}))
+	}
+	if removeExisting {
+		cw.vBox.Remove(cw.vBox.Objects[len(cw.vBox.Objects)-1])
+	}
+	cw.vBox.Add(layout)
+}
+
+func buttonName(name string) string {
+	parts := strings.Split(name, ".")
+	if len(parts) <= 3 {
+		return parts[len(parts)-1]
+	}
+	return strings.Join(parts[2:len(parts)], ".")
+}
+
+const hpad = 15
+const vpad = 10
+
+func maxBounds(names []string) fyne.Size {
+	var maxs fyne.Size
+	for _, name := range names {
+		s := fyne.MeasureText(name, theme.TextSize(), fyne.TextStyle{})
+		if s.Width > maxs.Width {
+			maxs.Width = s.Width
+		}
+		if s.Height > maxs.Height {
+			maxs.Height = s.Height
+		}
+	}
+	maxs.Width += hpad * 2
+	maxs.Height += vpad * 2
+	return maxs
+}
+
 func (cw *CommandWin) ListProps() []string {
-	return nil
+	var buttonNames []string
+	for name := range cw.buttons {
+		buttonNames = append(buttonNames, name)
+	}
+	sort.Strings(buttonNames)
+	return buttonNames
 }
 
 func (cw *CommandWin) runCommandWithString(s string) {
@@ -106,7 +171,7 @@ func (cw *CommandWin) runCommandWithString(s string) {
 			err := parse.Fields(s, r.Exec)
 			s := ""
 			if err != nil {
-				cw.result.SetText("error: " + err.Error())
+				s = "error: " + err.Error()
 			} else if len(r.Frames) > 0 {
 				s = r.Frames[len(r.Frames)-1].String(true)
 			}
