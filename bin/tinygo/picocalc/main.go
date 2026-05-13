@@ -8,9 +8,6 @@ import (
 	"device/arm"
 	"errors"
 	"machine"
-	"mattwach/rpngo/drivers/tinygo"
-	"mattwach/rpngo/drivers/tinygo/pixelwinbuffer"
-	"mattwach/rpngo/drivers/tinygo/tinyfs"
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/functions"
 	"mattwach/rpngo/common/key"
@@ -20,6 +17,9 @@ import (
 	"mattwach/rpngo/common/window/commands"
 	"mattwach/rpngo/common/window/input"
 	"mattwach/rpngo/common/window/plotwin"
+	"mattwach/rpngo/drivers/tinygo"
+	"mattwach/rpngo/drivers/tinygo/pixelwinbuffer"
+	"mattwach/rpngo/drivers/tinygo/tinyfs"
 	"time"
 )
 
@@ -106,7 +106,7 @@ func newPixelPlotWindow() (window.WindowWithProps, error) {
 	}
 	var pb pixelwinbuffer.PixelBuffer
 	pb.Init(pw)
-	ppw.Init(&pb)
+	ppw.Init(&pb, 256)
 	return &ppw, nil
 }
 
@@ -127,7 +127,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	_ = commands.InitWindowCommands(&rpnInst, &root, &picocalc.screen, newPixelPlotWindow)
+	_ = commands.InitWindowManagerCommands(&rpnInst, &root)
+	_ = commands.InitWindowRootCommands(&rpnInst, &root, &picocalc.screen, newPixelPlotWindow)
 	_ = plotwin.InitPlotCommands(&rpnInst, &root, &picocalc.screen)
 	if !picocalc.ctrlDown() {
 		if err := startup.Startup(&rpnInst, &fileOpsDriver); err != nil {

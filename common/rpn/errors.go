@@ -9,6 +9,7 @@ var (
 	ErrChooseDegRadOGrad         = errors.New("choose 'deg', 'rad', or 'grad'")
 	ErrComplexNumberNotSupported = errors.New("complex number not suppported")
 	ErrDivideByZero              = errors.New("divide by zero")
+	ErrExit                      = errors.New("exit")
 	ErrExpectedABoolean          = errors.New("expected a boolean")
 	ErrExpectedAComplexNumber    = errors.New("expected a complex number")
 	ErrExpectedANumber           = errors.New("expected a number")

@@ -3,11 +3,11 @@ package varwin
 
 import (
 	"mattwach/rpngo/common/elog"
+	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/window"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 type VariableWindow struct {
@@ -103,11 +103,11 @@ func (vw *VariableWindow) Update(r *rpn.RPN, unusedForce bool) error {
 			continue
 		}
 		if row < (h - 1) {
-			val := framesToString(allValues[name])
+			val := rpn.FramesToString(allValues[name])
 			if !vw.multiline {
-				val = makeSingleLine(val, w-len(name)-2)
+				val = parse.MakeSingleLine(val, w-len(name)-2)
 			} else {
-				row += countCRs(val)
+				row += parse.CountCRs(val)
 			}
 			vw.txtb.TextColor(window.White)
 			vw.txtb.Print(name, false)
@@ -123,57 +123,4 @@ func (vw *VariableWindow) Update(r *rpn.RPN, unusedForce bool) error {
 	vw.txtb.Print("num: "+strconv.Itoa(len(vw.names))+" hidden: "+strconv.Itoa(hidden), false)
 	vw.txtb.Update()
 	return nil
-}
-
-func countCRs(val string) int {
-	n := 0
-	for _, c := range val {
-		if c == '\n' {
-			n++
-		}
-	}
-	return n
-}
-
-func framesToString(frames []rpn.Frame) string {
-	var parts []string
-	for _, f := range frames {
-		parts = append(parts, f.String(true))
-	}
-	return strings.Join(parts, " -> ")
-}
-
-func makeSingleLine(line string, width int) string {
-	if width < 0 {
-		return ""
-	}
-	if strings.Contains(line, "\n") {
-		line = removeCRsAndComments(line)
-	}
-	if len(line) < width {
-		return line
-	}
-	if width < 4 {
-		return line[:width]
-	}
-	return line[:width-4] + "..."
-}
-
-func removeCRsAndComments(line string) string {
-	if !strings.Contains(line, "#") {
-		// no comments
-		return strings.ReplaceAll(line, "\n", " ")
-	}
-	var parts []string
-	for _, part := range strings.Split(line, "\n") {
-		commentIdx := strings.Index(part, "#")
-		if commentIdx >= 0 {
-			part = part[:commentIdx]
-		}
-		if len(part) == 0 {
-			continue
-		}
-		parts = append(parts, strings.Fields(part)...)
-	}
-	return strings.Join(parts, " ")
 }

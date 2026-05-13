@@ -23,9 +23,9 @@ type PixelPlotWindow struct {
 	needUpdate bool
 }
 
-func (pw *PixelPlotWindow) Init(pixw window.PixelWindow) {
+func (pw *PixelPlotWindow) Init(pixw window.PixelWindow, steps uint32) {
 	pw.pixw = pixw
-	pw.common.init(uint8(len(colorWheelPixel)))
+	pw.common.init(uint8(len(colorWheelPixel)), steps)
 }
 
 func (pw *PixelPlotWindow) ResizeWindow(x, y, w, h int) error {
@@ -99,4 +99,18 @@ func (pw *PixelPlotWindow) plotPoint(x, y float64, colidx uint8) error {
 	}
 	pw.pixw.SetPoint(wx, wy)
 	return nil
+}
+
+func (pw *PixelPlotWindow) PixelToCoord(x, y int) (float64, float64) {
+	w, h := pw.pixw.PixelSize()
+	return pw.common.pixelToCoordX(x, w), pw.common.pixelToCoordY(y, h)
+}
+
+func (pw *PixelPlotWindow) HasAParametricPlot() bool {
+	for _, plot := range pw.common.plots {
+		if plot.isParametric {
+			return true
+		}
+	}
+	return false
 }

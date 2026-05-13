@@ -13,6 +13,10 @@ A video on the project:
 
 It can be run on regular PCs (including Raspberry Pi):
 
+![fyne pc](img/fyne_build.png)
+
+or stictly from a terminal
+
 ![regular pc](img/running_on_pc.png)
 ![editor on pc](img/editor_on_pc.png)
 

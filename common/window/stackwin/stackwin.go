@@ -10,21 +10,6 @@ import (
 type StackWindow struct {
 	txtb  window.TextBuffer
 	round int8
-	rsd   roundedStringData
-}
-
-type roundedStringData struct {
-	buff      [32]byte
-	dec       [12]byte
-	inDecimal bool
-	didx      int8
-	idx       int
-}
-
-func (rsd *roundedStringData) reset() {
-	rsd.inDecimal = false
-	rsd.didx = 0
-	rsd.idx = 0
 }
 
 func (sw *StackWindow) Init(txtw window.TextWindow) {
@@ -110,7 +95,7 @@ func (sw *StackWindow) Update(rpn *rpn.RPN, unusedForce bool) error {
 		lw := w - len(s)
 		if lw > 0 {
 			sw.txtb.TextColor(window.Cyan)
-			s := sw.roundedString(f)
+			s := f.RoundedString(sw.round, true)
 			if len(s) > lw {
 				s = s[:lw]
 			}
@@ -128,56 +113,4 @@ func (sw *StackWindow) Update(rpn *rpn.RPN, unusedForce bool) error {
 	}
 	sw.txtb.Update()
 	return nil
-}
-
-func (sw *StackWindow) roundedString(f rpn.Frame) string {
-	s := f.String(true)
-	if !f.IsComplex() || (sw.round < 0) {
-		return s
-	}
-	sw.rsd.reset() // This is done to avoid heap allocations in tinygo
-
-	leftDecimalFn := func() {
-		if sw.round > 0 {
-			iv, _ := strconv.Atoi(string(sw.rsd.dec[:sw.rsd.didx]))
-			if sw.rsd.didx > sw.round {
-				iv = (iv + 5) / 10
-			}
-			for _, b := range strconv.Itoa(int(iv)) {
-				sw.rsd.buff[sw.rsd.idx] = byte(b)
-				sw.rsd.idx++
-			}
-		}
-		sw.rsd.inDecimal = false
-	}
-
-	for _, c := range s {
-		if sw.rsd.inDecimal {
-			if c == '.' {
-				// skip
-			} else if (c < '0') || (c > '9') {
-				leftDecimalFn()
-			} else if sw.rsd.didx <= sw.round {
-				sw.rsd.dec[sw.rsd.didx] = byte(c)
-				sw.rsd.didx++
-			}
-		}
-		if !sw.rsd.inDecimal {
-			sw.rsd.buff[sw.rsd.idx] = byte(c)
-			sw.rsd.idx++
-			if c == '.' {
-				sw.rsd.didx = 0
-				sw.rsd.inDecimal = true
-				if sw.round == 0 {
-					sw.rsd.idx--
-				}
-			}
-		}
-	}
-
-	if sw.rsd.inDecimal {
-		leftDecimalFn()
-	}
-
-	return string(sw.rsd.buff[:sw.rsd.idx])
 }

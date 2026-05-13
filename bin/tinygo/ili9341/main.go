@@ -6,11 +6,6 @@ package main
 
 import (
 	"errors"
-	"mattwach/rpngo/drivers/tinygo"
-	"mattwach/rpngo/drivers/tinygo/pixelwinbuffer"
-	"mattwach/rpngo/drivers/tinygo/ili9341"
-	"mattwach/rpngo/drivers/tinygo/serial"
-	"mattwach/rpngo/drivers/tinygo/tinyfs"
 	"mattwach/rpngo/common/elog"
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/functions"
@@ -22,6 +17,11 @@ import (
 	"mattwach/rpngo/common/window/input"
 	"mattwach/rpngo/common/window/plotwin"
 	"mattwach/rpngo/common/xmodem"
+	"mattwach/rpngo/drivers/tinygo"
+	"mattwach/rpngo/drivers/tinygo/ili9341"
+	"mattwach/rpngo/drivers/tinygo/pixelwinbuffer"
+	"mattwach/rpngo/drivers/tinygo/serial"
+	"mattwach/rpngo/drivers/tinygo/tinyfs"
 	"time"
 )
 
@@ -76,10 +76,11 @@ func run() error {
 		elog.Heap("alloc: /bin/tinygo/ili9341/main.go:72: var pb pixelwinbuffer.PixelBuffer")
 		var pb pixelwinbuffer.PixelBuffer // object allocated on the heap: escapes at line 74
 		pb.Init(pw)
-		ppw.Init(&pb)
+		ppw.Init(&pb, 256)
 		return &ppw, nil
 	}
-	_ = commands.InitWindowCommands(&rpnInst, &root, &screen, newPixelPlotWindow)
+	_ = commands.InitWindowManagerCommands(&rpnInst, &root)
+	_ = commands.InitWindowRootCommands(&rpnInst, &root, &screen, newPixelPlotWindow)
 	_ = plotwin.InitPlotCommands(&rpnInst, &root, &screen)
 	starterr := startup.Startup(&rpnInst, &fileOpsDriver)
 	w, h := screen.ScreenSize()

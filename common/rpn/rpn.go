@@ -20,6 +20,7 @@ type RPN struct {
 	maxStackDepth int
 	AngleUnit     FrameType
 	conv          *convert.Conversion
+	exiting       bool
 }
 
 // Init initializes an RPNCalc object
@@ -49,6 +50,8 @@ func (r *RPN) registerCore() {
 	r.Register("v.list", listVariables, CatVariables, listVariablesHelp)
 	r.Register("v.snapshot", varSnapshot, CatVariables, varSnapshotHelp)
 	r.Register("deg", deg, CatEng, degHelp)
+	r.Register("exists", exists, CatProg, existsHelp)
+	r.Register("exit", exit, CatCore, exitHelp)
 	r.Register("getangle", getAngle, CatEng, getAngleHelp)
 	r.Register("grad", grad, CatEng, gradHelp)
 	r.Register("rad", rad, CatEng, radHelp)
@@ -86,4 +89,25 @@ func DefaultInterrupt() bool {
 func (r *RPN) Println(msg string) {
 	r.Print(msg)
 	r.Print("\n")
+}
+
+const existsHelp = "Returns true if the given string exists as a command. This " +
+	"function can be useful when creating init script that will work in " +
+	"different contexts, for example fyne vs ncurses.\n\n" +
+	"example: 'w.new.group' exists"
+
+func exists(r *RPN) error {
+	f, err := r.PopFrame()
+	if err != nil {
+		return err
+	}
+	_, ok := r.functions[f.String(false)]
+	r.PushFrame(BoolFrame(ok))
+	return nil
+}
+
+const exitHelp = "exits RPN"
+
+func exit(r *RPN) error {
+	return ErrExit
 }

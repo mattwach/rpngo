@@ -12,13 +12,13 @@ import (
 )
 
 type PlotCommands struct {
-	root   *window.WindowRoot
-	screen window.Screen
+	manager window.WindowManager
+	screen  window.Screen
 }
 
 func InitPlotCommands(
 	r *rpn.RPN,
-	root *window.WindowRoot,
+	manager window.WindowManager,
 	screen window.Screen) *PlotCommands {
 	conceptHelp := map[string]string{
 		"plot": "Plot functions using plot. Plot will push an 'x' value to the stack,\n" +
@@ -49,7 +49,7 @@ func InitPlotCommands(
 	r.RegisterConceptHelp(conceptHelp)
 
 	elog.Heap("alloc: /window/plotwin/command.go:48: pc := PlotCommands{root: root, screen: screen, addPlotFn: addPlotFn}")
-	pc := PlotCommands{root: root, screen: screen} // object allocated on the heap: escapes at line 50
+	pc := PlotCommands{manager: manager, screen: screen} // object allocated on the heap: escapes at line 50
 	r.Register("plot", pc.plot, rpn.CatPlot, plotHelp)
 	r.Register("pplot", pc.pplot, rpn.CatPlot, pplotHelp)
 	return &pc
@@ -94,12 +94,12 @@ func (pc *PlotCommands) plotInternal(r *rpn.RPN, isParametric bool) error {
 	if err != nil {
 		return err
 	}
-	pw := pc.root.FindWindow(wname)
+	pw := pc.manager.FindWindow(wname)
 	if pw == nil {
 		if err := pc.initPlot(r); err != nil {
 			return err
 		}
-		pw = pc.root.FindWindow(wname)
+		pw = pc.manager.FindWindow(wname)
 	}
 	if pw == nil {
 		return errors.New("executing $.plotinit did not result in a window: " + wname)
@@ -210,8 +210,12 @@ func (wc *PlotCommands) initPlot(r *rpn.RPN) error {
 	if err := parse.Fields(macro, r.Exec); err != nil {
 		return err
 	}
-	w, h := wc.screen.ScreenSize()
-	if uerr := wc.root.Update(r, w, h, false); uerr != nil {
+	var w int
+	var h int
+	if wc.screen != nil {
+		w, h = wc.screen.ScreenSize()
+	}
+	if uerr := wc.manager.Update(r, w, h, false); uerr != nil {
 		elog.Heap("alloc: /window/plotwin/command.go:118: elog.Print('initPlot.Update error: ', uerr.Error())")
 		elog.Print("initPlot.Update error: ", uerr.Error()) // object allocated on the heap: escapes at line 118
 	}

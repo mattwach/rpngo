@@ -10,8 +10,10 @@ You'll first need to [install golang](https://go.dev/doc/install).
 There is a `bin/` directory that contains various different configurations of
 `rpngo` for PCs and for microcontrollers. Here is an overview:
 
-- `bin/minimal/rpn` - A minimal PC (or Raspberry Pi)  version.  Parses `args` and exits.
-- `bin/ncurses/rpn` - Uses [`ncurses`](https://en.wikipedia.org/wiki/Ncurses) to
+- `bin/minimal/mrpn` - A minimal PC (or Raspberry Pi)  version.  Parses `args` and exits.
+- `bin/fyne/frpn` - A version that just runs in the terminal with readline by default,
+  but also supports graphical windows via [fyne](https://fyne.io).
+- `bin/ncurses/nrpn` - Uses [`ncurses`](https://en.wikipedia.org/wiki/Ncurses) to
   support multiple view windows and even text-based plotting
 - `bin/tinygo/serialonly` - A minimal TinyGo build for  microcontrollers that uses
   serial communication only.
@@ -23,7 +25,7 @@ There is a `bin/` directory that contains various different configurations of
 
 ### Desktop / Raspberry Pi
 
-Minimal version:
+#### Minimal version:
 
 ```
 cd bin/minimal/mrpn
@@ -31,7 +33,29 @@ go build
 ./mrpn 2 3 +
 ```
 
-ncurses version 
+#### fyne version
+
+![fyne build](img/fyne_build.png)
+
+```
+cd bin/fyne/frpn
+go build
+./frpn
+```
+
+The `fyne` build also supports quick calculations on the commandline.
+This is similar to the minimal version but the stack and variables are saved
+between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
+commands
+
+```
+./frpn 2 3 +
+  5
+./frpn 4 +
+  9
+```
+
+#### ncurses version 
 
 ![ncurses build](img/ncurses_build.png)
 
@@ -49,10 +73,7 @@ go build
 ./nrpn
 ```
 
-The `ncurses` build also supports quick calculations on the commandline.
-This is similar to the minimal version but the stack and variables are saved
-between calls (to `~/.rpn_cli_state`) to allow calculations to span multiple
-commands
+Like the `frpn`, `nprn` supports quick calculations as arguments:
 
 ```
 ./nrpn 2 3 +
@@ -191,7 +212,12 @@ Examples below assume the stack is empty at the start of each line.
 
 ### User Interface
 
-The experience is similar to most terminals:
+There are two interactive user interfaces.  The `frpn` (fyne) interface uses
+[readline](https://github.com/chzyer/readline), which is a popular and
+well-documented interface.
+
+The `nrpn` and TinyGo builds use custom input logic that is similar in function
+to readline (but not identical):
 
 - `Left`, `right`, `ins`, `del`, `backspace`, `home`, and `end` all work like you would expect
 - Press `up` and `down` to visit command history
@@ -221,6 +247,9 @@ while `editf` saves it back to the original file.
 ![ncurses editor](img/editor_on_pc.png)
 
 ![picocalc editor](img/picocalc_editor.jpg)
+
+> Note: `frpn` does not support in-window editing; it assumes you already have a
+> text editor available.
 
 The editor only supports basic features right now:
 
@@ -349,7 +378,8 @@ are covered in more detail in upcoming sections:
 - `.serial` The path of the serial device to use on PCs (e.g.
   `/dev/ttyACMO`).
 - `.wend`, `.wtarget`, `.wweight` These can be used to control
-  how a new window is created. The concept is covered later.
+  how a new window is created. The concept is covered later. (not used with
+  fyne)
 
 Function keys are already setup in the `.rpngo` startup script.
 You can customize them as needed.
@@ -366,11 +396,21 @@ On Picocalc, the following are also defined:
 - `.f5` Saves command history
 - `.f6` Resets the calculator 
 
+Note: `frpn` currently does not support function keys.  Instead, you can create
+a custom command window with `w.new.command` as documented later.  Here is
+a quick example:
+
+```
+'c' w.new.command
+'c' 'b.pi' {3.141592653589793} w.setp
+'c' 'b.stack' {'s' w,new.stack} w.setp
+```
+
 ### Number Bases
 
 Many type of numbers are supported
 
-    50         # floating point (internally a 5+0i complex)
+    50         # floating point (internally a 50+0i complex)
     50+i       # complex number
     50<1       # polar complex (default is radians)
     deg 50<90  # You can use degrees for the angle.
@@ -522,12 +562,24 @@ The `rpngo` program supports several window types:
 - Stack
 - Variables
 - Plot
+- Command Window (frpn only)
 
 Of the above, only the input is required.  For the others,
 you can have zero or more of them.  For example, if you
 want an input window and two separate plot windows, you
 can do it. You might also have two stack windows with
 different configuration options set.  Whatever you want.
+
+### frpn vs others
+
+The `frpn` windows work differently than `nrpn` and PicoCalc (TinyGo)
+implementations.  `frpn` uses fyne and therefore windows are independent and
+managed by the operating system.  You *create* windows with the same commands
+(e.g. `'s' w.new.stack`), but the *layout* commands for splitting up a window
+into panes are not available in `frpn`. In short, if you are only using `frpn`,
+you can ignore the following section.
+
+### Window layout for `nrpn` and PicoCalc
 
 For example, say we want the following:
 
@@ -795,6 +847,33 @@ represents no rounding).
 - `multiline`: If true, then string that expand multiple lines will
   consume multiple lines in the variable window.
 
+### Command Window Properties
+
+The command window lets you define custom buttons.  Here is an example:
+
+```
+'c' w.new.command
+'c' 'b.pi' {3.141592653589793} w.setp
+'c' 'b.stack' {'s' w.new.stack} w.setp
+'c' 'b.vars' {'v' w.new.var} w.setp
+```
+
+![command window](img/command_window.png)
+
+Buttons are displayed in sorted variable order.  You can insert an extra
+dot argument to change the order.  For example
+
+```
+'c' 'b.zzz.e' {2.718281828459045} w.setp
+```
+
+![command window](img/command_window2.png)
+
+If you want to remove a button, set it's command value to an empty string.
+
+```
+'c' 'b.zzz.e' {} w.setp
+```
 
 ## Plotting
 
@@ -885,6 +964,16 @@ and on an LCD build:
 
 ![lcd plot 4](img/lcd_plot2.jpg)
 
+and using fyne (`frpn`):
+
+![fyne plot](img/fyne_plot.png)
+
+Note that fyne has additional capabilties not avaiable in other versions:
+
+* Drag the plot with the left mouse
+* Resize the plot by dragging the middle mouse or using the mouse wheel
+* Directly update plot properties using the bottom controls
+
 Let's see how properties changed:
 
     'p' w.listp
@@ -931,7 +1020,7 @@ Now that we covered all of the properties, it can be revealed that `plot` and `p
 are simply setting these properties "behind the scenes". You can do so manually,
 if you want.  Here, we plot `sin` and `cos` using the low-level `w.setp` method:
 
-    # manually create a window
+    # manually create a window (for fyne, only use w.new.plot)
     w.reset
     false .wend=
     'p' w.new.plot
@@ -944,6 +1033,7 @@ if you want.  Here, we plot `sin` and `cos` using the low-level `w.setp` method:
     'p' 'maxv' 20 w.setp
 
 ![ncurses plot 4](img/ncurses_plot6.png)
+![ncurses plot 4](img/fyne_plot2.png)
 
 ### Special Plot Variables
 
@@ -1390,7 +1480,26 @@ You can also create your own errors like this:
 This can be used when handling `try` errors to rethrow the same error or some
 modified version of it.
 
+## Break
 
+You can type Ctrl-C in most builds of RPNGO to interrupt a running program.
+
+An exception is `frpn`: When a UI window has been opened, ctrl-C will actually
+kill RPNGO, sometimes with an panic. This is a bug that occurs because Fyne
+captures and acts on Ctrl-C signals in a way that can not be stopped (I tried).
+Putting the terminal in "raw" mode is a potential future work-around but it's
+not implemented yet due to the complexity.
+
+To work-around the issue, you can issue `'c' w.new.command`.  This will give
+you a window that has a `break` button you can click to halt the program
+as-needed.  This command can be added to several files to streamline the
+creation:
+
+- Add it to `.rpngo` to have it appear or startup
+- Alternatively, change `.rpngo` `.plotinit` to something like:
+  `{{'c' w.new.command} {0/} try $.plotwin w.new.plot} .plotinit=`.  This
+  will try to create a command window before creating a plot window with
+  a graceful skip if the window already exists.
 
 ### Other Programming Notes
 
@@ -1409,7 +1518,7 @@ to make you aware in case you have not read it all.
   point number like `0.1`). Delays are useful when animating graphs.
 - `time`: Prints a relative time in floating point seconds. This is useful
   when benchmarking (take a `t0`, do your operation, then do `time $t0 -`).
-- `edit`: A simple editor for multiline strings.
+- `edit`: A simple editor for multiline strings. (not available in `frpn`)
 - `rand`: Create a random value from 0 to 1
 - `input`: Waits for the user to enter input, pushes it to the stack as a
   string.

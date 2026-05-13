@@ -3,6 +3,7 @@ package plotwin
 import (
 	"errors"
 	"fmt"
+	"log"
 	"mattwach/rpngo/common/elog"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
@@ -70,12 +71,12 @@ type plotWindowCommon struct {
 	stats     PointStats
 }
 
-func (pw *plotWindowCommon) init(numColors uint8) {
+func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
 	pw.autox = true
 	pw.autoy = true
 	pw.minv = -1
 	pw.maxv = 1
-	pw.steps = 250
+	pw.steps = steps
 	pw.numColors = numColors
 }
 
@@ -121,6 +122,17 @@ func (pw *plotWindowCommon) setPlotFn(fnstr string, idx int) error {
 }
 
 func (pw *plotWindowCommon) setAxisMinMax(r *rpn.RPN) {
+	// emergency corrections to avoid hanging in other parts of the code.
+	// This will only happen if other parts of the code fail to
+	// keep these values proper.
+	if !pw.autox && (pw.minx >= pw.maxx) {
+		log.Printf("warning: MinX >= MaxX (%f >= %f), adjusting to avoid math issues", pw.minx, pw.maxx)
+		pw.autox = true
+	}
+	if !pw.autoy && (pw.miny >= pw.maxy) {
+		log.Printf("warning: MinY >= MaxY (%f >= %f), adjusting to avoid math issues", pw.miny, pw.maxy)
+		pw.autoy = true
+	}
 	// first determine the ranges
 	if pw.autox || pw.autoy {
 		pw.stats.reset()
@@ -249,6 +261,14 @@ func (pw *plotWindowCommon) adjustAutoY() {
 	delta := (pw.maxy - pw.miny) / 5
 	pw.maxy += delta
 	pw.miny -= delta
+}
+
+func (pw *plotWindowCommon) pixelToCoordX(x, w int) float64 {
+	return pw.minx + (pw.maxx-pw.minx)*(float64(x)/float64(w))
+}
+
+func (pw *plotWindowCommon) pixelToCoordY(y, h int) float64 {
+	return pw.miny + (pw.maxy-pw.miny)*(float64(h-y)/float64(h))
 }
 
 func (pw *plotWindowCommon) transformX(x float64, w int) (int, bool) {
