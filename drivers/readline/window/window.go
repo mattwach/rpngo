@@ -3,6 +3,7 @@
 package window
 
 import (
+	"errors"
 	"fmt"
 	"mattwach/rpngo/common/drivers/posix/fs"
 	"mattwach/rpngo/common/fileops"
@@ -62,6 +63,9 @@ func (rlw *ReadlineWindow) ExecLine() error {
 		err = parse.Fields(line, r.Exec)
 		color.Unset()
 		if err != nil {
+			if errors.Is(err, rpn.ErrExit) {
+				return err
+			}
 			color.Red("%v\n", err)
 		} else {
 			rlw.printFrames(r)

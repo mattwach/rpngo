@@ -3,7 +3,6 @@
 package input
 
 import (
-	"errors"
 	"mattwach/rpngo/common/fileops"
 	"mattwach/rpngo/common/key"
 	"mattwach/rpngo/common/parse"
@@ -11,8 +10,6 @@ import (
 	"mattwach/rpngo/common/window"
 	"strings"
 )
-
-var ErrExit = errors.New("exit")
 
 // Input gets input from the keyboard/keypad
 type Input interface {
@@ -79,7 +76,7 @@ func (iw *InputWindow) Update(r *rpn.RPN, unusedForce bool) error {
 		return nil
 	}
 	if line == "exit" {
-		return ErrExit
+		return rpn.ErrExit
 	}
 	action, err := parseLine(r, line)
 	if err != nil {

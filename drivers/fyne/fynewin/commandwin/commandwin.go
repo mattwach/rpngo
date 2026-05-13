@@ -1,6 +1,7 @@
 package commandwin
 
 import (
+	"errors"
 	"mattwach/rpngo/common/parse"
 	"mattwach/rpngo/common/rpn"
 	"mattwach/rpngo/common/startup"
@@ -171,6 +172,9 @@ func (cw *CommandWin) runCommandWithString(s string) {
 			err := parse.Fields(s, r.Exec)
 			s := ""
 			if err != nil {
+				if errors.Is(err, rpn.ErrExit) {
+					fyne.CurrentApp().Quit()
+				}
 				s = "error: " + err.Error()
 			} else if len(r.Frames) > 0 {
 				s = r.Frames[len(r.Frames)-1].String(true)

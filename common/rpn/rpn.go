@@ -20,6 +20,7 @@ type RPN struct {
 	maxStackDepth int
 	AngleUnit     FrameType
 	conv          *convert.Conversion
+	exiting       bool
 }
 
 // Init initializes an RPNCalc object
@@ -50,6 +51,7 @@ func (r *RPN) registerCore() {
 	r.Register("v.snapshot", varSnapshot, CatVariables, varSnapshotHelp)
 	r.Register("deg", deg, CatEng, degHelp)
 	r.Register("exists", exists, CatProg, existsHelp)
+	r.Register("exit", exit, CatCore, exitHelp)
 	r.Register("getangle", getAngle, CatEng, getAngleHelp)
 	r.Register("grad", grad, CatEng, gradHelp)
 	r.Register("rad", rad, CatEng, radHelp)
@@ -102,4 +104,10 @@ func exists(r *RPN) error {
 	_, ok := r.functions[f.String(false)]
 	r.PushFrame(BoolFrame(ok))
 	return nil
+}
+
+const exitHelp = "exits RPN"
+
+func exit(r *RPN) error {
+	return ErrExit
 }

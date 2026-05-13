@@ -53,7 +53,7 @@ func interactive(r *rpn.RPN) error {
 	for {
 		w, h = screen.ScreenSize()
 		if err := root.Update(r, w, h, true); err != nil {
-			if errors.Is(err, input.ErrExit) {
+			if errors.Is(err, rpn.ErrExit) {
 				return nil
 			}
 			return err
