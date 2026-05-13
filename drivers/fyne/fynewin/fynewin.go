@@ -55,6 +55,7 @@ func (f *FyneWin) Init(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) {
 	r.Register("w.new.plot", f.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", f.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", f.wNewVar, rpn.CatWindow, common.WNewVarHelp)
+	r.Register("w.reset", f.wReset, rpn.CatWindow, common.WResetHelp)
 }
 
 func (f *FyneWin) AddChild(name string, wprops window.WindowWithProps, win fyne.Window) error {
@@ -121,8 +122,32 @@ func (f *FyneWin) UpdateByName(r *rpn.RPN, name string, force bool) error {
 }
 
 func (f *FyneWin) Snapshot(buff []byte, name string) ([]byte, error) {
-	// TODO: implement
-	return buff, nil
+	if name == "root" {
+		return f.snapshotChildren(buff), nil
+	}
+	w := f.FindWindow(name)
+	if w != nil {
+		return window.SnapshotProps(buff, w, name), nil
+	}
+	return buff, rpn.ErrNotFound
+}
+
+func (f *FyneWin) snapshotChildren(buff []byte) []byte {
+	for name, c := range f.children {
+		buff = f.snapshotChild(buff, name, c)
+	}
+	return buff
+}
+
+func (f *FyneWin) snapshotChild(buff []byte, name string, c child) []byte {
+	if name != "i" {
+		buff = append(buff, '\'')
+		buff = append(buff, []byte(name)...)
+		buff = append(buff, []byte("' w.new.")...)
+		buff = append(buff, []byte(c.wprops.Type())...)
+		buff = append(buff, '\n')
+	}
+	return window.SnapshotProps(buff, c.wprops, name)
 }
 
 // Needed for compatibility with the plorwin.WindowManager interface
@@ -242,4 +267,15 @@ func (f *FyneWin) wNewCommand(r *rpn.RPN) error {
 			f.Update(r, 0, 0, true)
 		})
 	})
+}
+
+func (f *FyneWin) wReset(r *rpn.RPN) error {
+	for name := range f.children {
+		if name != "i" {
+			if err := f.DeleteWindowOrGroup(name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

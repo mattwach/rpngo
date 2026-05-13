@@ -44,3 +44,5 @@ const WNewPlotHelp = "Creates a new plot window with the given name and\n" +
 
 const WNewVarHelp = "Creates a new variable window with the given name and\n" +
 	"adds it to the root window. Example: 'v1' w.new.var"
+
+const WResetHelp = "Resets window configuration to just a single input window"

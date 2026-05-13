@@ -18,21 +18,25 @@ const commonStartup = `
 # (-b +/- sqrt(b*b - 4*a*c)) / (2 * a)
 {$2 * 4 * $1 sq - neg sqrt 1> neg $0 $2 - $3 2 * / 3< + 1> 2 * /} quad=
 
-{w.reset @.init} .f1=
-{w.reset} .f2=
-{w.reset @.init @.plotinit} .f3=
-
-{
-  w.reset
-  'root' w.columns
-  'v' w.new.var 'v'
-  'showdot'
-  true w.setp
-} .f7=
-
-# snapshot save and load
-{'' cd snapshot '.rpngo_snaphot' save 'snapshot saved to .rpngo_snapshot' printlnx} .f4=
-{'' cd '.rpngo_snaphot' . 'snapshot loaded from .rpngo_snapshot' printlnx} .f9=
+'w.new.group' exists
+  {
+  {w.reset @.init} .f1=
+  {w.reset} .f2=
+  {w.reset @.init @.plotinit} .f3=
+  
+  {
+    w.reset
+    'root' w.columns
+    'v' w.new.var 'v'
+    'showdot'
+    true w.setp
+  } .f7=
+  
+  # snapshot save and load
+  {'' cd snapshot '.rpngo_snaphot' save 'snapshot saved to .rpngo_snapshot' printlnx} .f4=
+  {'' cd '.rpngo_snaphot' . 'snapshot loaded from .rpngo_snapshot' printlnx} .f9=
+} 
+if
 
 'p' .plotwin=
 rad

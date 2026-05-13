@@ -29,12 +29,10 @@ func InitWindowRootCommands(
 	r.Register("w.new.plot", wc.wNewPlot, rpn.CatWindow, common.WNewPlotHelp)
 	r.Register("w.new.stack", wc.wNewStack, rpn.CatWindow, common.WNewStackHelp)
 	r.Register("w.new.var", wc.wNewVar, rpn.CatWindow, common.WNewVarHelp)
-	r.Register("w.reset", wc.wReset, rpn.CatWindow, wResetHelp)
+	r.Register("w.reset", wc.wReset, rpn.CatWindow, common.WResetHelp)
 	r.Register("w.weight", wc.wWeight, rpn.CatWindow, wWeightHelp)
 	return &wc
 }
-
-const wResetHelp = "Resets window configuration to just a single input window"
 
 func (wc *WindowRootCommands) wReset(r *rpn.RPN) error {
 	r.PushFrame(rpn.StringFrame("root", rpn.STRING_SINGLEQ_FRAME))
