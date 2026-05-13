@@ -46,12 +46,8 @@ func interactive(r *rpn.RPN) error {
 	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
 		return err
 	}
-	w, h := screen.ScreenSize()
-	if err := root.Update(r, w, h, true); err != nil {
-		return err
-	}
 	for {
-		w, h = screen.ScreenSize()
+		w, h := screen.ScreenSize()
 		if err := root.Update(r, w, h, true); err != nil {
 			if errors.Is(err, rpn.ErrExit) {
 				return nil
