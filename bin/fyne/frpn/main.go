@@ -39,9 +39,6 @@ func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
 	}()
 	_ = commands.InitWindowManagerCommands(r, fw)
 	_ = plotwin.InitPlotCommands(r, fw, nil)
-	if err := startup.Startup(r, &fs.FileOpsDriver{}); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -59,6 +56,11 @@ func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) err
 		return err
 	}
 	go func() {
+		err := runStartup(rpnInst)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
 		for {
 			if err := rlw.ExecLine(); err != nil {
 				break
@@ -71,6 +73,14 @@ func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) err
 
 	fw.Run()
 	return nil
+}
+
+func runStartup(rpnInst chan *rpn.RPN) error {
+	r := <-rpnInst
+	defer func() {
+		rpnInst <- r
+	}()
+	return startup.Startup(r, &fs.FileOpsDriver{})
 }
 
 func main() {

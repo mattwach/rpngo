@@ -35,9 +35,28 @@ const defaultConfig = commonStartup + `
     'g' .wtarget=
   }
   .init=
-  @.init
 }
-if
+{
+  {
+    w.reset
+    'c' w.new.command
+	'c' 'b.stack' {'s' w.new.stack} w.setp
+	'c' 'b.vars' {'v' w.new.var} w.setp
+	'c' 'b.save snapshot' {
+	  '' cd
+	  snapshot '.rpngo_snapshot' save
+	  'snapshot saved to .rpngo_snapshot' printlnx} w.setp
+	'c' 'b.load snapshot' {
+	  '' cd
+	  '.rpngo_snapshot' .
+	  'snapshot loaded from .rpngo_snapshot' printlnx} w.setp
+	'c' 'b.help' {?} w.setp
+	'c' 'b.exit' {exit} w.setp
+  }
+  .init=
+}
+ifelse
+@.init
 
 {
   time t1=

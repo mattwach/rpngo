@@ -78,7 +78,7 @@ func (cw *CommandWin) WindowSize() (int, int) {
 }
 
 func (cw *CommandWin) Type() string {
-	return "stack"
+	return "command"
 }
 
 func (cw *CommandWin) SetProp(name string, val rpn.Frame) error {
