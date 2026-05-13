@@ -48,6 +48,12 @@ func (rlw *ReadlineWindow) Close() {
 	rlw.inst.Close()
 }
 
+// Input is can be connected to rpn.Input
+func (rlw *ReadlineWindow) Input(r *rpn.RPN) (string, error) {
+	fmt.Println()
+	return rlw.inst.Readline()
+}
+
 func (rlw *ReadlineWindow) ExecLine() error {
 	rlw.autoFn()
 	line, err := rlw.inst.Readline()

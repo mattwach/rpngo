@@ -89,6 +89,9 @@ func printall(r *rpn.RPN) error {
 const inputHelp = "Pauses for user input and pushes the result to the stack as a string"
 
 func input(r *rpn.RPN) error {
+	if r.Input == nil {
+		return rpn.ErrNotSupported
+	}
 	str, err := r.Input(r)
 	if err != nil {
 		return err

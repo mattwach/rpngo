@@ -32,11 +32,12 @@ func interactive(r *rpn.RPN) error {
 	return interactiveChannel(rpnInst, &inter)
 }
 
-func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin) error {
+func initRPN(rpnInst chan *rpn.RPN, fw *fynewin.FyneWin, rlw *window.ReadlineWindow) error {
 	r := <-rpnInst
 	defer func() {
 		rpnInst <- r
 	}()
+	r.Input = rlw.Input
 	_ = commands.InitWindowManagerCommands(r, fw)
 	_ = plotwin.InitPlotCommands(r, fw, nil)
 	return nil
@@ -52,7 +53,7 @@ func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) err
 	fw.Init(rpnInst, interrupt)
 	fw.AddChild("i", &rlw, nil)
 
-	if err := initRPN(rpnInst, &fw); err != nil {
+	if err := initRPN(rpnInst, &fw, &rlw); err != nil {
 		return err
 	}
 	go func() {
