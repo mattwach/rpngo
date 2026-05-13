@@ -143,7 +143,7 @@ func run() error {
 	for {
 		w, h = picocalc.screen.ScreenSize()
 		if err := root.Update(&rpnInst, w, h, true); err != nil {
-			if errors.Is(err, input.ErrExit) {
+			if errors.Is(err, rpn.ErrExit) {
 				return nil
 			}
 			return err
