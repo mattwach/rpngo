@@ -33,8 +33,8 @@ const commonStartup = `
   } .f7=
   
   # snapshot save and load
-  {'' cd snapshot '.rpngo_snaphot' save 'snapshot saved to .rpngo_snapshot' printlnx} .f4=
-  {'' cd '.rpngo_snaphot' . 'snapshot loaded from .rpngo_snapshot' printlnx} .f9=
+  {'' cd snapshot '.rpngo_snapshot' save 'snapshot saved to .rpngo_snapshot' printlnx} .f4=
+  {'' cd '.rpngo_snapshot' . 'snapshot loaded from .rpngo_snapshot' printlnx} .f9=
 } 
 if
 
