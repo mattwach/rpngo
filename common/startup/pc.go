@@ -35,13 +35,17 @@ const defaultConfig = commonStartup + `
     'g' .wtarget=
   }
   .init=
+	@.init
 }
 {
   {
     w.reset
+  } .init=
+  {
     'c' w.new.command
 	'c' 'b.stack' {'s' w.new.stack} w.setp
 	'c' 'b.vars' {'v' w.new.var} w.setp
+	'c' 'b.plot' {@.plotinit {example: 'sin' plot} printlnx} w.setp
 	'c' 'b.save snapshot' {
 	  '' cd
 	  snapshot '.rpngo_snapshot' save
@@ -52,11 +56,10 @@ const defaultConfig = commonStartup + `
 	  'snapshot loaded from .rpngo_snapshot' printlnx} w.setp
 	'c' 'b.help' {?} w.setp
 	'c' 'b.exit' {exit} w.setp
-  }
-  .init=
+  } ui=
+  'enter @ui for a command window, ? for help, topic? for topic help' printlnx
 }
 ifelse
-@.init
 
 {
   time t1=
