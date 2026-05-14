@@ -1,9 +1,14 @@
+TARGET ?= pico
+DATE = $(shell date +"%Y%m%d")
+RELEASE = rpngo_serialonly_$(TARGET)_$(DATE).uf2
+
 build:
-	tinygo build -target=pico -scheduler=tasks -o a.uf2
+	tinygo build -target=$(TARGET) -scheduler=tasks -o $(RELEASE)
 
 flash:
-	tinygo flash -target=pico -scheduler=tasks
+	tinygo flash -target=$(TARGET) -scheduler=tasks
 	
 
 allocs:
-	tinygo build -target=pico -print-allocs='.*' 2>&1
+	tinygo build -target=$(TARGET) -print-allocs='.*' 2>&1
+
