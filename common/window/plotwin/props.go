@@ -194,7 +194,7 @@ func (pw *plotWindowCommon) getProp(name string) (rpn.Frame, error) {
 	return rpn.Frame{}, rpn.ErrUnknownProperty
 }
 
-var props = []string{"minv", "maxv", "minx", "maxx", "miny", "maxy", "numplots", "steps", "autox", "autoy"}
+var props = []string{"minv", "maxv", "minx", "maxx", "miny", "maxy", "numplots", "steps", "autox", "autoy", "drawaxis"}
 
 func (pw *plotWindowCommon) ListProps() []string {
 	elog.Heap("alloc: window/plotwin/props.go:191: wprops := make([]string, len(props)+len(pw.plots)*3)")
