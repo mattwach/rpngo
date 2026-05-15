@@ -41,22 +41,36 @@ EOF
 }
 
 make_app_image() {
-  local exec_path=$1
+  local base_dir=$1
+  local exec_path=$2
   local dir=/tmp/appimage
   rm -rf $dir
-  local app_dir=$dir/$(basename $exec_path)-x86_64.AppDir
+  local image_name=$(basename $exec_path)-x86_64.AppDir
+  local app_dir=$dir/$image_name
   local bin_dir=$app_dir/usr/bin
   mkdir -p $bin_dir 
   cp $exec_path $bin_dir
   create_app_run $exec_path $app_dir
   copy_icon_file $exec_path $app_dir
   create_desktop_file $exec_path $app_dir
+  pushd $dir
+  linuxdeploy \
+      --appdir $image_name \
+      --output appimage \
+      --desktop-file $image_name/rpngo.desktop
+  cp $(basename $exec_path)-x86_64.AppImage $base_dir
+  pushd
 }
 
 make_linux_apps() {
+  local base_dir=$1
+  mkdir -p $base_dir
+
+  # mrpn is a special case that needs no dependencies
+  mv bin/minimal/mrpn/mrpn $base_dir
+
   for path in $(find bin -type f -executable); do
-    make_app_image $path
-    exit 1
+    make_app_image $base_dir $path
   done
 }
 
@@ -76,30 +90,21 @@ make_pico_uf2() {
 
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
-# TODO:
-# This is a work in progress.  That is why commands are commented out below.
-# To get the below to run, I already had frpn built, then ran this script
-# then from /tmp, ran:
-#
-# ARCH=x86_64 /home/mattwach/Downloads/appimagetool-x86_64.AppImage frpn-x86_64.AppDir/
-#
-# This builds an appimage that does not contain the needed dependencies. The
-# next step is to get those dependencies.
-
-#make clean
-#make all
+make clean
+make all
 
 PACKAGE_BASE=rpngo_linux_and_pico_$(date +%Y%m%d)
 TMPDIR=/tmp/$PACKAGE_BASE
 
 rm -rf $TMPDIR
+mkdir -p $TMPDIR
 
 cp -r examples $TMPDIR
 cp -r img $TMPDIR
 cp *.md $TMPDIR
 
-#make_pico_uf2
-make_linux_apps
+make_pico_uf2
+make_linux_apps $TMPDIR/bin
 
 cd /tmp
 tar cvfz $PACKAGE_BASE.tar.gz $PACKAGE_BASE

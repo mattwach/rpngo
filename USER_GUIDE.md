@@ -5,6 +5,10 @@ mostly explain in terms of examples that you can try yourself.
 
 ## Building RPNGO
 
+If you are using Linux or a Pico/Pico2, you have the option of skipping
+the build and downloading a precompiled release (see the releases section of
+github).
+
 You'll first need to [install golang](https://go.dev/doc/install).
 
 There is a `bin/` directory that contains various different configurations of
