@@ -55,7 +55,11 @@ func Startup(r *rpn.RPN, fs fileops.FileOpsDriver) error {
 	s := loadOrCreateConfigFile(fs, configPath)
 	err = parse.Fields(s, r.Exec)
 	if err != nil {
-		return fmt.Errorf("while parsing %s: %w", configPath, err)
+		return fmt.Errorf(
+			"while parsing %s: %w\n\nYou may delete or rename %s to have it automatically regenerated.",
+			configPath,
+			err,
+			configPath)
 	}
 	return nil
 }

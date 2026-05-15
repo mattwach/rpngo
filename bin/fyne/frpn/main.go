@@ -57,6 +57,7 @@ func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) err
 		return err
 	}
 	go func() {
+		defer fw.Shutdown()
 		err := runStartup(rpnInst)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -68,8 +69,6 @@ func interactiveChannel(rpnInst chan *rpn.RPN, interrupt *startup.Interrupt) err
 			}
 			updateFyne(rpnInst, &fw)
 		}
-
-		fw.Shutdown()
 	}()
 
 	fw.Run()

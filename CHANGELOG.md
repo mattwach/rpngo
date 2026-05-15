@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+Bug Fixes
+
+- Fixed hang and improved error message when the `.rpngo` startup file executes
+  with an error.
+
 ## 1.0.0 - `rpngo_linux_and_pico_20260515`
 
 This is the initial version released with the new release process.  It contains
