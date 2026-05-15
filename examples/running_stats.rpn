@@ -1,0 +1,46 @@
+# capture time in seconds, distance and distant units
+"Enter your distance, units and time in MM:SS. examples:" printlnx
+"3.1 miles 26:49" printlnx
+"5 km 23:41" printlnx
+input fields
+':' split float 1> float 60 * + seconds=
+distunit= float dist=
+
+# helper variables
+$seconds 3600 / hours=
+$dist $distunit ">mi" + @ distmiles=
+$dist $distunit ">km" + @ distkm=
+
+# dump stats in english units
+
+"English Units:" printlnx
+
+"  " printx
+$distmiles 2 round printx " miles" printlnx
+
+"  " printx
+$seconds 60 / $distmiles / $0 int float printx
+":" printx
+frac 60 * 0 round printx
+" minutes/mile" printlnx
+
+"  " printx
+$distmiles $hours / 2 round printx " miles/hour" printlnx
+
+# dump stats in metric units
+
+"Metric Units:" printlnx
+
+"  " printx
+$distkm 2 round printx " km" printlnx
+
+"  " printx
+$seconds 60 / $distkm / $0 int float printx
+":" printx
+frac 60 * 0 round printx
+" minutes/km" printlnx
+
+"  " printx
+$distkm $hours / 2 round printx " km/hour" printlnx
+
+
