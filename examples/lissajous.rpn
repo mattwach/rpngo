@@ -26,7 +26,7 @@
 'p' 'maxv' $cycles $pi 2 * * w.setp
 'p' 'steps' $stepmult $cycles * w.setp
 
-'root' w.update
+$.plotwin w.update
 
 'using:' printlnx
 '  $a=' printx $a printlnx
