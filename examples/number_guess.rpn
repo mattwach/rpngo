@@ -1,9 +1,4 @@
 {
-rand 101 * int a=  # set a to a random number
-$guess_fn for     # loop until the user guesses correctly
-} number_guess=
-
-{
   "enter a number from 0-100: " printx input int g=  # put the users guess into $g
   # The next 3 lines put one message on the stack
   $g $a < {"too low"} if
@@ -13,3 +8,5 @@ $guess_fn for     # loop until the user guesses correctly
   $g $a != # loop conditional
 } guess_fn=
 
+rand 101 * int a=  # set a to a random number
+$guess_fn for     # loop until the user guesses correctly

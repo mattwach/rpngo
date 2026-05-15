@@ -1,17 +1,15 @@
 # create a plot of sin and animates it running though
 # various phases
+0 t=                     # initial phase
+{$t + sin} plot          # plot it
+'p' 'minv' -3.14 w.setp  # set graph limits so they don't change while animating
+'p' 'maxv' 3.14 w.setp
+'p' 'miny' -1.1 w.setp
+'p' 'maxy' 1.1 w.setp
 {
-  0 t=                     # initial phase
-  {$t + sin} plot          # plot it
-  'p' 'minv' -3.14 w.setp  # set graph limits so they don't change while animating
-  'p' 'maxv' 3.14 w.setp
-  'p' 'miny' -1.1 w.setp
-  'p' 'maxy' 1.1 w.setp
-  {
-    'p' w.update  # redraw plot
-    $t 0.1 + t=   # next phase offset
-    0.015 delay   # wait a little bit (~60 FPS)
-    $t 30 <       # Check for end of program
-  } for
-} animate_sin=
+  'p' w.update  # redraw plot
+  $t 0.1 + t=   # next phase offset
+  0.015 delay   # wait a little bit (~60 FPS)
+  $t 30 <       # Check for end of program
+} for
 

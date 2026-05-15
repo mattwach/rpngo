@@ -1,24 +1,21 @@
 {
-  0 delta=
-  2 sc=
-  10 maxv=
-  2000 frames=
-  {$0 $0 $sc * $delta + cos * 1> $0 $sc * $delta + sin *} pplot
-  'p' 'minv' 0 w.setp
-  'p' 'maxv' $maxv w.setp
-  'p' 'minx' $maxv neg w.setp
-  'p' 'maxx' $maxv w.setp
-  'p' 'miny' $maxv neg w.setp
-  'p' 'maxy' $maxv w.setp
-  'p' 'steps' 1000 w.setp
-  'program will exit after a minute. press ctrl-c to stop sooner' printlnx
-  {@next_frame $frames 1 - frames= $frames 0 >=} for
-} spiral=
-
-{
   $delta 0.15 - delta=
   'p' w.update
   1 60 / delay
 } next_frame=
 
+0 delta=
+2 sc=
+10 maxv=
+2000 frames=
+{$0 $0 $sc * $delta + cos * 1> $0 $sc * $delta + sin *} pplot
+'p' 'minv' 0 w.setp
+'p' 'maxv' $maxv w.setp
+'p' 'minx' $maxv neg w.setp
+'p' 'maxx' $maxv w.setp
+'p' 'miny' $maxv neg w.setp
+'p' 'maxy' $maxv w.setp
+'p' 'steps' 1000 w.setp
+'program will exit after a minute. press ctrl-c to stop sooner' printlnx
+{@next_frame $frames 1 - frames= $frames 0 >=} for
 
