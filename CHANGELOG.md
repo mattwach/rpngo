@@ -9,6 +9,7 @@ Bug Fixes
 
 Features
 
+- Added `drawaxis` plot option
 - Added `split` function for splitting a string
 - Added more examples to `examples/` directory
 

@@ -22,17 +22,18 @@ import (
 // with care.  This means that putting a pointer to it in this struct is
 // probably starting down a bad path.
 type FynePlotWin struct {
-	win           fyne.Window
-	canvas        interactiveImage
-	autoXCheckbox *widget.Check
-	autoYCheckbox *widget.Check
-	xMin          *customwidget.CustomEntry
-	xMax          *customwidget.CustomEntry
-	yMin          *customwidget.CustomEntry
-	yMax          *customwidget.CustomEntry
-	steps         *customwidget.CustomEntry
-	color         color.RGBA
-	clearFirst    bool
+	win              fyne.Window
+	canvas           interactiveImage
+	autoXCheckbox    *widget.Check
+	autoYCheckbox    *widget.Check
+	drawAxisCheckbox *widget.Check
+	xMin             *customwidget.CustomEntry
+	xMax             *customwidget.CustomEntry
+	yMin             *customwidget.CustomEntry
+	yMax             *customwidget.CustomEntry
+	steps            *customwidget.CustomEntry
+	color            color.RGBA
+	clearFirst       bool
 }
 
 const minEntryWidth = 80
@@ -61,6 +62,11 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 			pw.canvas.parent.SetProp("autoy", rpn.BoolFrame(b))
 		})
 	})
+	pw.drawAxisCheckbox = widget.NewCheck("Axis", func(b bool) {
+		pw.uiAction("drawaxis", func() {
+			pw.canvas.parent.SetProp("drawaxis", rpn.BoolFrame(b))
+		})
+	})
 	xMinLabel := widget.NewLabel("Xmin")
 	pw.xMin = customwidget.NewCustomEntry(pw.updateXMinEntry, minEntryWidth)
 	xMaxLabel := widget.NewLabel("Xmax")
@@ -74,6 +80,7 @@ func New(win fyne.Window, r chan *rpn.RPN, parent *plotwin.PixelPlotWindow) *Fyn
 	bottom := container.NewHBox(
 		pw.autoXCheckbox,
 		pw.autoYCheckbox,
+		pw.drawAxisCheckbox,
 		xMinLabel,
 		pw.xMin,
 		xMaxLabel,
@@ -123,6 +130,8 @@ func (pw *FynePlotWin) Refresh() {
 		pw.autoXCheckbox.SetChecked(autox.UnsafeBool())
 		autoy, _ := pw.canvas.parent.GetProp("autoy")
 		pw.autoYCheckbox.SetChecked(autoy.UnsafeBool())
+		drawaxis, _ := pw.canvas.parent.GetProp("drawaxis")
+		pw.drawAxisCheckbox.SetChecked(drawaxis.UnsafeBool())
 		minx, _ := pw.canvas.parent.GetProp("minx")
 		pw.xMin.SetText(fmt.Sprintf("%f", minx.UnsafeReal()))
 		maxx, _ := pw.canvas.parent.GetProp("maxx")

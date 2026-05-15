@@ -64,6 +64,7 @@ type plotWindowCommon struct {
 	numColors uint8
 	autox     bool
 	autoy     bool
+	drawaxis  bool
 	minv      float64
 	maxv      float64
 	steps     uint32
@@ -74,6 +75,7 @@ type plotWindowCommon struct {
 func (pw *plotWindowCommon) init(numColors uint8, steps uint32) {
 	pw.autox = true
 	pw.autoy = true
+	pw.drawaxis = true
 	pw.minv = -1
 	pw.maxv = 1
 	pw.steps = steps

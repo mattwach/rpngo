@@ -61,7 +61,9 @@ func (pw *PixelPlotWindow) Update(r *rpn.RPN, force bool) error {
 		return nil
 	}
 	pw.common.setAxisMinMax(r)
-	pw.drawAxis()
+	if pw.common.drawaxis {
+		pw.drawAxis()
+	}
 	pw.lastcolidx = 255
 	// Do not exit the program if this fails
 	_ = pw.common.createPoints(r, pw.plotPoint)

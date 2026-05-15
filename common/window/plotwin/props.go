@@ -87,6 +87,13 @@ func (pw *plotWindowCommon) setProp(name string, val rpn.Frame) error {
 		}
 		pw.autoy = v
 		return nil
+	case "drawaxis":
+		v, err := val.Bool()
+		if err != nil {
+			return err
+		}
+		pw.drawaxis = v
+		return nil
 	case "steps":
 		v, err := val.BoundedInt(1, maxSteps)
 		if err != nil {
@@ -155,6 +162,8 @@ func (pw *plotWindowCommon) getProp(name string) (rpn.Frame, error) {
 		return rpn.BoolFrame(pw.autox), nil
 	case "autoy":
 		return rpn.BoolFrame(pw.autoy), nil
+	case "drawaxis":
+		return rpn.BoolFrame(pw.drawaxis), nil
 	case "numplots":
 		return rpn.IntFrame(int64(len(pw.plots)), rpn.INTEGER_FRAME), nil
 	case "steps":

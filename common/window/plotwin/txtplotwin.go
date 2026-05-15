@@ -51,7 +51,9 @@ func (pw *TxtPlotWindow) Update(r *rpn.RPN, unusedForce bool) error {
 	defer pw.txtw.Refresh()
 	pw.common.setAxisMinMax(r)
 	// do not exit the program if either of these fail
-	_ = pw.drawAxis()
+	if pw.common.drawaxis {
+		_ = pw.drawAxis()
+	}
 	_ = pw.common.createPoints(r, pw.plotPoint)
 	return nil
 }
