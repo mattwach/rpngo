@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 - Unreleased
 
 Bug Fixes
 
 - Fixed hang and improved error message when the `.rpngo` startup file executes
   with an error.
+
+Features
+
+- Added `split` function for splitting a string
+- Added more examples to `examples/` directory
 
 ## 1.0.0 - `rpngo_linux_and_pico_20260515`
 

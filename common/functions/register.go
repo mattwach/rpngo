@@ -38,6 +38,7 @@ func RegisterAll(r *rpn.RPN) {
 	r.Register("keep", keep, rpn.CatData, keepHelp)
 	r.Register("reverse", reverse, rpn.CatData, reverseHelp)
 	r.Register("sort", sortFn, rpn.CatData, sortHelp)
+	r.Register("split", split, rpn.CatData, splitHelp)
 
 	r.Register("**", power, rpn.CatEng, powerHelp)
 	r.Register("acos", acos, rpn.CatEng, acosHelp)
