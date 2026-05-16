@@ -10,7 +10,6 @@
 -4   ymin=
 4    ymax=
 400 ysteps=
-1.0  zscale=
 
 # isometric projection function (angles are in degrees)
 #
@@ -52,12 +51,12 @@ $xsteps $ysteps * int 1 - tsteps=
 
 # create the plot
 {'p' w.new.plot} {0/} try
-'p' 'drawaxis'    false              w.setp
-'p' 'minv'        0                  w.setp
-'p' 'maxv'        $tsteps float      w.setp
-'p' 'numplots'    1                  w.setp
-'p' 'parametric0' true               w.setp
-'p' 'steps'       $tsteps            w.setp
+'p' 'drawaxis'    false          w.setp
+'p' 'minv'        0              w.setp
+'p' 'maxv'        $tsteps float  w.setp
+'p' 'numplots'    1              w.setp
+'p' 'parametric0' true           w.setp
+'p' 'steps'       $tsteps        w.setp
 
 'p' 'fn0' {@t_to_xy $1 $1 @fn3d @iso_project} w.setp 
 
