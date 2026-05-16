@@ -1,0 +1,63 @@
+# Draws a 3D plot using isometric projection
+
+# formula that takes (x,y) and produces a z coordinate
+{sq 1> sq + sin} fn3d=
+
+# boundaries
+-4   xmin=
+4    xmax=
+100  xsteps=
+-4   ymin=
+4    ymax=
+400 ysteps=
+1.0  zscale=
+
+# isometric projection function (angles are in degrees)
+#
+# We have
+#     z
+#     |
+#     |
+#    / \
+#   /   \
+#  x     y
+#
+# To convert to a x2d, y2d coordinate for plotting.
+#
+# x2d is the sum of:
+#  -x * sin(60)   (60 degrees between x axis and z negative)
+#   y * sin(60)   (60 degrees between y axis and z negative)
+#
+# y2d is the sum of
+#  -x * cos(60)
+#  -y * cos(60)
+#  z
+#
+# Reducing, we end up with:
+#
+# x2d = sin(60) * (y-x) = 0.866 * (y-x)
+# y2d = z - 0.5 * x - 0.5 * y
+{$1 $3 - 0.866 *
+ 1> 3> 0.5 * - 2> 0.5 * -} iso_project=
+
+# a function that will translate t to an x,y
+# we'll just have t range from 0 to the step count
+# This is a classic 1d -> 2d expansion by using division for one
+# coordinate and the % (mod) operator to get the other one.  The rest
+# of the math translates the resulting integer indexes to the
+# appropriate min-max ranges
+$xsteps $ysteps * int 1 - tsteps=
+{int $0 $ysteps int / float $xsteps float / $xmax $xmin - * $xmin +
+ 1>     $ysteps int % float $ysteps float / $ymax $ymin - * $ymin +} t_to_xy=
+
+# create the plot
+{'p' w.new.plot} {0/} try
+'p' 'drawaxis'    false              w.setp
+'p' 'minv'        0                  w.setp
+'p' 'maxv'        $tsteps float      w.setp
+'p' 'numplots'    1                  w.setp
+'p' 'parametric0' true               w.setp
+'p' 'steps'       $tsteps            w.setp
+
+'p' 'fn0' {@t_to_xy $1 $1 @fn3d @iso_project} w.setp 
+
